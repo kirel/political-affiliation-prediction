@@ -65,6 +65,8 @@ class Classifier:
 
         # transform string into sparse matrix
         x = self.BoW['count_vectorizer'].transform([text.lower()])
+        if self.BoW.has_key('tfidf_transformer'):
+            x = self.BoW['tfidf_transformer'].transform(x)
         # predict probabilities of each party
         probabilities = self.clf.predict_proba(x)
         # transform the predictions into json output

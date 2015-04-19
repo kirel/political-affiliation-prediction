@@ -74,6 +74,7 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     open(folder+'/report.txt','wb').write(report)
     print(report)
 
+    print(metrics.confusion_matrix(Y,predicted))
     if plot:
         # print confusion matrix
         import pylab

@@ -105,11 +105,12 @@ def txt2BoW(folder='/Users/felix/Code/Python/political-affiliation-prediction/mo
     flat_speech = chain.from_iterable(data.values())
     # the count vectorizer of scikit learn    
     count_vect = CountVectorizer().fit(chain.from_iterable(data.values()))
+    tf_transformer = TfidfTransformer(use_idf=True).fit(count_vect.transform(chain.from_iterable(data.values())))
     for party in data.keys():
         print 'Processing %s'%party
-        data[party] = count_vect.transform(data[party])
+        data[party] = tf_transformer.transform(count_vect.transform(data[party]))
     # dump data to pickle
     cPickle.dump(data,open(folder+'/BoW.pickle','wb'),-1)
     # dump vectorizer to pickle
-    cPickle.dump({'count_vectorizer':count_vect},open(folder+'/BoW_transformer.pickle','wb'),-1)
+    cPickle.dump({'count_vectorizer':count_vect,'tfidf_transformer':tf_transformer},open(folder+'/BoW_transformer.pickle','wb'),-1)
 
