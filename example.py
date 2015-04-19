@@ -55,16 +55,20 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     
     # do nested CV
     for ifold in range(folds):
-        print('Fold: %d'%(ifold+1))
         testidx = idx[ifold,:]
         trainidx = idx[setdiff1d(arange(folds),ifold),:].flatten()
-        text_clf = LogisticRegression(class_weight='auto')
+        text_clf = LogisticRegression(class_weight='auto',dual=True)
         gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
         gs_clf.fit(X[trainidx,:],Y[trainidx])
         predicted[testidx] = gs_clf.predict(X[testidx,:])
         predicted_prob[testidx,:] = gs_clf.predict_proba(X[testidx,:])
+        print '************ Fold %d *************'%(ifold+1)
+        print metrics.classification_report(Y[testidx], predicted[testidx],target_names=data.keys()) 
     
     # extract some metrics
+    print '********************************'
+    print '************ Total *************'
+    print '********************************'
     report = metrics.classification_report(Y[:fsize*folds], predicted,target_names=data.keys())
     # dump metrics to file
     open(folder+'/report.txt','wb').write(report)

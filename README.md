@@ -12,4 +12,4 @@ Install [virualenv(-wrapper)](https://virtualenvwrapper.readthedocs.org/en/lates
 
 ## Test
 
-    curl --data "text=Grüne" l:5000/predict
+    curl --data "text=angriffskrieg" 1:5000/predict

@@ -82,7 +82,7 @@ def partyparse(folder='/Users/felix/Code/Python/political-affiliation-prediction
                 # take the speech to be of that party and store the label
                 if pa in party[txtidx].lower():
                     foundparty = pa
-                    data[pa].append(text[txtidx+1])
+                    data[pa].append(text[txtidx+1].lower())
             # write out which party was found for this speech
             speechlabelsfh.write('%s:%s\n'%(party[txtidx],foundparty))   
     # store the preamble-party associations
@@ -103,20 +103,13 @@ def txt2BoW(folder='/Users/felix/Code/Python/political-affiliation-prediction/mo
     from itertools import chain
     data = cPickle.load(open(folder+'/rawtext.pickle'))
     flat_speech = chain.from_iterable(data.values())
-    
-    # lookfor stopwords file
-    try:
-        stopwords = open(folder+'/stopwords.txt').read().split('\n')
-    except:
-        stopwords = ''
     # the count vectorizer of scikit learn    
-    count_vect = CountVectorizer(stop_words=stopwords).fit(chain.from_iterable(data.values()))
-    # the tf-idf normalizer
-    tf_transformer = TfidfTransformer(use_idf=True).fit(count_vect.transform(chain.from_iterable(data.values())))
+    count_vect = CountVectorizer().fit(chain.from_iterable(data.values()))
     for party in data.keys():
-        data[party] = tf_transformer.transform(count_vect.transform(data[party]))
+        print 'Processing %s'%party
+        data[party] = count_vect.transform(data[party])
     # dump data to pickle
     cPickle.dump(data,open(folder+'/BoW.pickle','wb'),-1)
-    # dump vectorizers to pickle
-    cPickle.dump({'count_vectorizer':count_vect,'tfid_transformer':tf_transformer},open(folder+'/BoW_transformer.pickle','wb'),-1)
+    # dump vectorizer to pickle
+    cPickle.dump({'count_vectorizer':count_vect},open(folder+'/BoW_transformer.pickle','wb'),-1)
 

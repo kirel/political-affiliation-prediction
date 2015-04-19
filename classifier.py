@@ -64,8 +64,7 @@ class Classifier:
         '''
 
         # transform string into sparse matrix
-        x = self.BoW['tfid_transformer'].transform(
-                self.BoW['count_vectorizer'].transform([text]))
+        x = self.BoW['count_vectorizer'].transform([text.lower()])
         # predict probabilities of each party
         probabilities = self.clf.predict_proba(x)
         # transform the predictions into json output
@@ -101,12 +100,13 @@ class Classifier:
         Y = Y[randidx]
         X = X[randidx,:]
         # the classifier, accounting for unbalanced classes
-        text_clf = LogisticRegression(class_weight='auto')
+        text_clf = LogisticRegression(class_weight='auto',dual=True)
         # the regularizer
         parameters = {'C': (10.**arange(-5,5,.5)).tolist()}
         # perform gridsearch to get the best regularizer
         gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
         gs_clf.fit(X,Y)
+        print metrics.classification_report(Y,gs_clf.predict(X),target_names=data.keys())
         # dump classifier to pickle
         cPickle.dump({'classifier':gs_clf,'labels':data.keys()},open(self.folder+'/classifier.pickle','wb'),-1)
 
