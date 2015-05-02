@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import os
 import urllib2
 import cPickle
 from bs4 import BeautifulSoup
@@ -12,7 +13,7 @@ from numpy.random import permutation
 import codecs
 
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
-                folder='/Users/felix/Dropbox/partypredictor/', \
+                folder='model/textdata', \
                 suffix='-data.txt'):
     '''
     
@@ -23,6 +24,8 @@ def get_files(url='http://www.bundestag.de/plenarprotokolle', \
     folder  the folder to download the files to
     suffix  a suffix for the speeche files 
     '''
+    if not os.path.isdir(folder+'/textdata'):
+        os.mkdir(folder+'/textdata')
     # read the site content and parse the html tree
     site = urllib2.urlopen(url)
     html = site.read()
@@ -32,12 +35,15 @@ def get_files(url='http://www.bundestag.de/plenarprotokolle', \
     # look for the suffix links and download the files
     for url in list_urls:
         if url.has_attr('href') and url['href'].find(suffix) > 0:
-            fh = open(folder+url['href'].split('/')[-1],'wb')
-            fh.write(urllib2.urlopen('http://www.bundestag.de'+url['href']).read())
+            remotefn = 'http://www.bundestag.de'+url['href']
+            localfn = folder+'/textdata/'+url['href'].split('/')[-1]
+            print 'Downloading %s to %s'%(remotefn,localfn)
+            fh = open(localfn,'wb')
+            fh.write(urllib2.urlopen(remotefn).read())
             fh.close()
         
-def partyparse(folder='/Users/felix/Code/Python/political-affiliation-prediction/model',\
-            suffix='-data.txt'):
+def partyparse(folder='model', suffix='-data.txt', \
+    parties = ['90/DIE','CDU/CSU','SPD', 'DIE LINKE']):
     '''
     
     Loops through files and collects text data for each party
@@ -45,25 +51,24 @@ def partyparse(folder='/Users/felix/Code/Python/political-affiliation-prediction
 
     INPUT
     folder  the folder of the textfiles
-
+    suffix  
+    parties list of substrings of parties to look for (had issues with umlauts of gruenen)
     '''
     import os
     
     # a file handle to store the speech preamble, serving as label 
     # check for existing file and remove if found
-    if os.path.isfile(folder+'/speech_labels.txt'):
-        os.remove(folder+'/speech_labels.txt')
+    if os.path.isfile(folder+'/textdata/speech_labels.txt'):
+        os.remove(folder+'/textdata/speech_labels.txt')
     
-    speechlabelsfh = codecs.open(folder+'/speech_labels.txt','wb',encoding='latin_1')
+    speechlabelsfh = codecs.open(folder+'/textdata/speech_labels.txt','wb',encoding='latin_1')
     speechlabelsfh.write('String|Party\n')
     
     # find all files with suffix
-    files = glob.glob(folder+'/*'+suffix)
+    files = glob.glob(folder+'/textdata/*'+suffix)
 
-    # substrings of parties to look for (there were issues with umlauts of gruenen)
-    parties = ['90/DIE','CDU/CSU','SPD', 'DIE LINKE']
     data = {x.decode('utf-8').lower():[] for x in parties}
-    
+    print 'Parsing %d files'%len(files) 
     # go through files
     for f in files:
         fh = codecs.open(f,'r','latin_1')
@@ -88,29 +93,70 @@ def partyparse(folder='/Users/felix/Code/Python/political-affiliation-prediction
     # store the preamble-party associations
     speechlabelsfh.close()
     # store the data
-    cPickle.dump(data,open(folder+'/rawtext.pickle','wb'),-1)
+    fn = folder+'/textdata/rawtext.pickle'
+    print 'Saving raw text to %s'%fn
+    cPickle.dump(data,open(fn,'wb'),-1)
 
-def txt2BoW(folder='/Users/felix/Code/Python/political-affiliation-prediction/model'):
+def txt2BoW(folder='model'):
     '''
 
     Transforms strings of each speach into Bag-of-Words vectors, with tf-idf normalization
-    VEEEEERY SLOW
 
     INPUT
     folder  the folder of the raw text pickle file from partyparse function
 
     '''
     from itertools import chain
-    data = cPickle.load(open(folder+'/rawtext.pickle'))
+    fn = folder+'/textdata/rawtext.pickle'
+    print 'Loading %s'%fn
+    data = cPickle.load(open(fn))
     flat_speech = chain.from_iterable(data.values())
     # the count vectorizer of scikit learn    
     count_vect = CountVectorizer().fit(chain.from_iterable(data.values()))
+    print 'Learn BoW vocabulary'
     tf_transformer = TfidfTransformer(use_idf=True).fit(count_vect.transform(chain.from_iterable(data.values())))
+    print 'Found %d words'%len(count_vect.vocabulary_)
     for party in data.keys():
-        print 'Processing %s'%party
+        print 'Processing %s (%d speeches)'%(party,len(data[party]))
         data[party] = tf_transformer.transform(count_vect.transform(data[party]))
+    fn = folder+'/BoW.pickle'
+    print 'Saving BoW to %s'%fn
     # dump data to pickle
-    cPickle.dump(data,open(folder+'/BoW.pickle','wb'),-1)
+    cPickle.dump(data,open(fn,'wb'),-1)
     # dump vectorizer to pickle
-    cPickle.dump({'count_vectorizer':count_vect,'tfidf_transformer':tf_transformer},open(folder+'/BoW_transformer.pickle','wb'),-1)
+    fn = folder+'/BoW_transformer.pickle'
+    print 'Saving vectorizers to %s'%fn
+    vectorizers = {'count_vectorizer':count_vect,'tfidf_transformer':tf_transformer}
+    cPickle.dump(vectorizers,open(fn,'wb'),-1)
 
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(\
+        description='Downloads, parses and transforms parliament speech text files')
+
+    parser.add_argument('-u','--url', help='URL for speeches [http://www.bundestag.de/plenarprotokolle]',default='http://www.bundestag.de/plenarprotokolle')
+
+    parser.add_argument('-s','--suffix',\
+        help='Suffix for speech files [-data.txt]',\
+        default='-data.txt')
+
+    parser.add_argument('-f','--folder',help='Folder to store text files [./textdata]',\
+        default='model')
+
+    parser.add_argument('-d','--download',help='If files should be downloaded',\
+            action='store_true', default=False)
+    parser.add_argument('-p','--parse',help='If files should be parsed into different parties',\
+            action='store_true', default=False)
+    parser.add_argument('-t','--transform',help='If texts should be bag-of-word transformed',\
+            action='store_true', default=False)
+    
+    args = vars(parser.parse_args())
+    
+    if not os.path.isdir(args['folder']):
+        os.mkdir(args['folder']) 
+    if args['download']:
+        get_files(**args)
+    if args['parse']:
+        partyparse(folder=args['folder'],suffix=args['suffix']) 
+    if args['transform']:
+        txt2BoW(folder=args['folder'])

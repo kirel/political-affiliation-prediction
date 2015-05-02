@@ -28,16 +28,13 @@ Install [virualenv(-wrapper)](https://virtualenvwrapper.readthedocs.org/en/lates
 
 ## Download German parliament speeches text files, parse and extract Bag-of-Words feature vectors
 
-In python shell: 
-
-    from extract_bundestag_speeches import *
-    get_files(url='http://www.bundestag.de/plenarprotokolle',suffix='-data.txt',folder='path/to/store/textfiles')
-    partyparse(folder='path/to/store/textfiles')
-    txt2BoW(folder='path/to/store/textfiles')
+    python downloader.py --download --parse --transform
 
 ## Retrain classifier
 
-In python shell:
+    If no classifier.pickle file is in the model folder, the classifier will be retrained
+
+    The classifier can be explicitly retrained, as e.g. in a python shell:
 
     from classifier import *
     clf = Classifier(folder='path/to/textfiles',train=True)
