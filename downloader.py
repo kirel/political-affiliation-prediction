@@ -12,6 +12,97 @@ from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
 
+def get_news(sources=['welt','zeit','sz'], folder='model', clusters=10, topwords=100):
+    '''
+    Collects all news articles from political ressort of major German newspapers
+    Articles are transformed to BoW vectors and assigned to a political party
+    For better visualization, articles' BoW vectors are also clustered into topics
+
+    INPUT
+    folder      the model folder containing classifier and BoW transformer
+    sources     a list of strings for each newspaper for which a crawl is implemented
+                default ['zeit','sz']
+    clusters    number of clusters for topic modelling (default 20)
+    topwords    number of words for representing a cluster center (default 100)
+
+    '''
+    import classifier
+    from sklearn.cluster import MiniBatchKMeans 
+    result = {'topics':[],'predictions':{}}
+    
+    # the classifier for prediction of political affiliation
+    clf = classifier.Classifier(folder=folder)
+    
+    # a topic model using vanilla sgd kmeans
+    km = MiniBatchKMeans(n_clusters=clusters)
+    
+    for source in sources:
+
+        if source is 'welt':
+            # fetching articles from sueddeutsche.de/politik
+            url = 'http://www.welt.de/politik'
+            site = BeautifulSoup(urllib2.urlopen(url).read())
+            titles = site.findAll("a", { "class" : "as_teaser-kicker" })
+            urls = [a['href'] for a in titles]
+         
+        if source is 'sz':
+            # fetching articles from sueddeutsche.de/politik
+            url = 'http://www.sueddeutsche.de/politik'
+            site = BeautifulSoup(urllib2.urlopen(url).read())
+            titles = site.findAll("div", { "class" : "teaser" })
+            urls = [a.findNext('a')['href'] for a in titles]
+       
+        if source is 'zeit':
+            # fetching articles from zeit.de/politik
+            url = 'http://www.zeit.de/politik'
+            site = BeautifulSoup(urllib2.urlopen(url).read())
+            titles = site.findAll("span", { "class" : "supertitle" })
+            urls = [a.parent['href'] for a in titles if a.parent['href'].find('/2015-')>0]
+
+        print "Found %d articles on %s"%(len(urls),url)
+         
+        # predict party from url for this source
+        print "Predicting %s"%source
+        result['predictions'][source] = dict([(url,clf.predict_url(url)) for url in urls])
+            
+        # Training topic clusters for each source 
+        print "Fitting topics on %s"%source
+        # extract text of all articles into BoW and train cluster model 
+        data = [a['text'] for a in result['predictions'][source].values()]
+        bow = clf.BoW['tfidf_transformer'].transform(clf.BoW['count_vectorizer'].transform([text.lower() for text in data]))
+        km.fit(bow)
+    
+    clusterstats = zeros((2,clusters))
+    # Now that the clusters are fit, we assign articles to topics
+    for source in result['predictions'].keys():
+        for item in result['predictions'][source].keys():
+            # store the distance of this article from the cluster center
+            result['predictions'][source][item]['cluster_distance'] = \
+                km.transform(clf.bow(result['predictions'][source][item]['text']))
+            # store the topic/cluster assignment itself
+            result['predictions'][source][item]['clusters'] = \
+                km.predict(clf.bow(result['predictions'][source][item]['text']))
+            # collect the total number of articles in a cluster 
+            clusterstats[0,result['predictions'][source][item]['clusters']] += 1
+            # collect the distance of all articles in a cluster
+            clusterstats[1,:] =+ result['predictions'][source][item]['cluster_distance']
+    print 'Fitted %d clusters to %d articles'%(clusters,clusterstats.sum(axis=1)[0])
+    
+    # transform word to BoW index into reverse lookup table
+    wordidx2word = dict(zip(clf.BoW['count_vectorizer'].vocabulary_.values(),clf.BoW['count_vectorizer'].vocabulary_.keys()))
+    # save cluster centers and top words
+    for cluster in range(clusters):
+        thiscluster = dict()
+        thiscluster['id'] = cluster
+        wordidx = reversed(km.cluster_centers_[cluster,:].argsort()[-topwords:])
+        thiscluster['topwords'] = [wordidx2word[idx] for idx in wordidx]
+        thiscluster['assignments'] = clusterstats[0,cluster]
+        thiscluster['mean_distance'] = clusterstats[1,cluster]/clusterstats[0,cluster]
+        result['topics'].append(thiscluster)
+        print 'Topic %s, %d articles'%(' '.join(thiscluster['topwords'][:3]),thiscluster['assignments'])
+    
+    return result
+
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \
                 suffix='-data.txt'):
@@ -43,7 +134,10 @@ def get_files(url='http://www.bundestag.de/plenarprotokolle', \
             fh.close()
         
 def partyparse(folder='model', suffix='-data.txt', \
-    parties = ['90/DIE','CDU/CSU','SPD', 'DIE LINKE']):
+    parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
+                {'name':'spd','searchpattern':'SPD'},\
+                {'name':'gruene','searchpattern':'90/DIE'},\
+                {'name':'cdu','searchpattern':'CDU/CSU'}]):
     '''
     
     Loops through files and collects text data for each party
@@ -67,7 +161,7 @@ def partyparse(folder='model', suffix='-data.txt', \
     # find all files with suffix
     files = glob.glob(folder+'/textdata/*'+suffix)
 
-    data = {x.decode('utf-8').lower():[] for x in parties}
+    data = {x['name']:[] for x in parties}
     print 'Parsing %d files'%len(files) 
     # go through files
     for f in files:
@@ -82,12 +176,13 @@ def partyparse(folder='model', suffix='-data.txt', \
         for txtidx in range(len(party)):
             # look for party in this text-preamble
             foundparty = '-'
-            for pa in data.keys():
+            for pa in parties:
                 # if we find a party-substring in this preamble
                 # take the speech to be of that party and store the label
-                if pa in party[txtidx].lower():
-                    foundparty = pa
-                    data[pa].append(text[txtidx+1].lower())
+                if pa['searchpattern'].decode('utf-8').lower() in party[txtidx].lower():
+                    foundparty = pa['name']
+                    pa['name']
+                    data[pa['name']].append(text[txtidx+1].lower())
             # write out which party was found for this speech
             speechlabelsfh.write('%s:%s\n'%(party[txtidx],foundparty))   
     # store the preamble-party associations
@@ -151,11 +246,11 @@ if __name__ == "__main__":
             action='store_true', default=False)
     
     args = vars(parser.parse_args())
-    
+    print args.keys() 
     if not os.path.isdir(args['folder']):
         os.mkdir(args['folder']) 
     if args['download']:
-        get_files(**args)
+        get_files(folder=args['folder'],suffix=args['suffix'],url=args['url'])
     if args['parse']:
         partyparse(folder=args['folder'],suffix=args['suffix']) 
     if args['transform']:

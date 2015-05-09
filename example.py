@@ -45,7 +45,7 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     Y = Y[randidx]
     X = X[randidx,:]
     idx = reshape(arange(fsize*folds),(folds,fsize))
-    
+    Y = Y[:fsize*folds]
     # allocate matrices for predictions
     predicted = zeros(fsize*folds)
     predicted_prob = zeros((fsize*folds,len(data)))
@@ -69,12 +69,12 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     print '********************************'
     print '************ Total *************'
     print '********************************'
-    report = metrics.classification_report(Y[:fsize*folds], predicted,target_names=data.keys())
+    report = metrics.classification_report(Y, predicted,target_names=data.keys())
     # dump metrics to file
     open(folder+'/report.txt','wb').write(report)
     print(report)
-
     print(metrics.confusion_matrix(Y,predicted))
+    
     if plot:
         # print confusion matrix
         import pylab

@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
+from time import sleep
 
 class Classifier:
 
@@ -45,7 +46,13 @@ class Classifier:
         
         '''
         # load the website and parse the html
-        soup = BeautifulSoup(urllib2.urlopen(url).read())
+        try:
+            text = urllib2.urlopen(url).read()
+        except urllib2.URLError, e:
+            print e
+            sleep(5)
+            text = urllib2.urlopen(url).read()
+        soup = BeautifulSoup(text)
         # extract paragraphs and concatenate them together in one string
         paragraphs = ' '.join(map((lambda x:x.getText()),soup.find_all('p')))
         # call the classifier
@@ -64,13 +71,12 @@ class Classifier:
         '''
 
         # transform string into sparse matrix
-        x = self.BoW['count_vectorizer'].transform([text.lower()])
-        if self.BoW.has_key('tfidf_transformer'):
-            x = self.BoW['tfidf_transformer'].transform(x)
+        x = self.bow(text)
         # predict probabilities of each party
         probabilities = self.clf.predict_proba(x)
         # transform the predictions into json output
         result = {'text':text,'prediction':[]}
+        # the classifier returns parties in alphabetical order, so we reorder
         for pidx in range(len(self.parties)): 
             result['prediction'].append(
                 {   'party':self.parties[pidx],
@@ -78,6 +84,11 @@ class Classifier:
                 })
         return result
 
+    def bow(self,text):
+        x = self.BoW['count_vectorizer'].transform([text.lower()])
+        if self.BoW.has_key('tfidf_transformer'):
+            x = self.BoW['tfidf_transformer'].transform(x)
+        return x
 
     def train(self,folds = 4):
         '''

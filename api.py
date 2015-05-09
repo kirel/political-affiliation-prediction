@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import os
 app = Flask(__name__)
 
@@ -7,6 +7,14 @@ from classifier import Classifier
 
 DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
+
+@app.route("/")
+def index():
+    """
+    When you request the root path, you'll get the index.html template.
+
+    """
+    return render_template("index.html")
 
 @app.route("/")
 def root():
@@ -22,5 +30,9 @@ def predict():
         return jsonify(classifier.predict(text))
 
 if __name__ == "__main__":
+    port = 5000
     classifier = Classifier()
-    app.run(debug = DEBUG)
+    # Open a web browser pointing at the app.
+    os.system("open http://localhost:{0}".format(port))
+
+    app.run(port = port, debug = DEBUG)
