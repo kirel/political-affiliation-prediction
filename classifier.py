@@ -105,9 +105,13 @@ class Classifier:
         folds   number of cross-validation folds for optimizing the regularizer of the classifier
 
         '''
-        # load the data
-        data = cPickle.load(open(self.folder+'/BoW.pickle'))
-
+        try:
+            # load the data
+            fn = self.folder+'/BoW.pickle'
+            data = cPickle.load(open(fn))
+        except:
+            error('Could not load Bag-0f-Words file in %s'%sfn + \
+                'Try executing [python downloader.py --download --parse --transform]')
         # create numerical labels for each party
         Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
         # create the data matrix
