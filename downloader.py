@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
 import re
+import datetime
 import os
 import urllib2
 import cPickle
@@ -7,12 +9,12 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array
 from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
 
-def get_news(sources=['welt','zeit','sz'], folder='model', clusters=10, topwords=100):
+def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model', clusters=10, topwords=100):
     '''
     Collects all news articles from political ressort of major German newspapers
     Articles are transformed to BoW vectors and assigned to a political party
@@ -38,6 +40,20 @@ def get_news(sources=['welt','zeit','sz'], folder='model', clusters=10, topwords
     
     for source in sources:
 
+        if source is 'spiegel':
+            # fetching articles from sueddeutsche.de/politik
+            url = 'http://www.spiegel.de/politik'
+            site = BeautifulSoup(urllib2.urlopen(url).read())
+            titles = site.findAll("div", { "class" : "teaser" })
+            urls = ['http://www.spiegel.de'+a.findNext('a')['href'] for a in titles]
+         
+        if source is 'faz':
+            # fetching articles from sueddeutsche.de/politik
+            url = 'http://www.faz.net/aktuell/politik'
+            site = BeautifulSoup(urllib2.urlopen(url).read())
+            titles = site.findAll("a", { "class" : "TeaserHeadLink" })
+            urls = ['http://www.faz.net'+a['href'] for a in titles]
+         
         if source is 'welt':
             # fetching articles from sueddeutsche.de/politik
             url = 'http://www.welt.de/politik'
@@ -78,14 +94,16 @@ def get_news(sources=['welt','zeit','sz'], folder='model', clusters=10, topwords
         for item in result['predictions'][source].keys():
             # store the distance of this article from the cluster center
             result['predictions'][source][item]['cluster_distance'] = \
-                km.transform(clf.bow(result['predictions'][source][item]['text']))
+                km.transform(clf.bow(result['predictions'][source][item]['text']))\
+                    .flatten().tolist()
             # store the topic/cluster assignment itself
             result['predictions'][source][item]['clusters'] = \
-                km.predict(clf.bow(result['predictions'][source][item]['text']))
+                km.predict(clf.bow(result['predictions'][source][item]['text']))\
+                    .flatten().tolist()
             # collect the total number of articles in a cluster 
             clusterstats[0,result['predictions'][source][item]['clusters']] += 1
             # collect the distance of all articles in a cluster
-            clusterstats[1,:] =+ result['predictions'][source][item]['cluster_distance']
+            clusterstats[1,:] =+ array(result['predictions'][source][item]['cluster_distance'])
     print 'Fitted %d clusters to %d articles'%(clusters,clusterstats.sum(axis=1)[0])
     
     # transform word to BoW index into reverse lookup table
@@ -96,10 +114,15 @@ def get_news(sources=['welt','zeit','sz'], folder='model', clusters=10, topwords
         thiscluster['id'] = cluster
         wordidx = reversed(km.cluster_centers_[cluster,:].argsort()[-topwords:])
         thiscluster['topwords'] = [wordidx2word[idx] for idx in wordidx]
-        thiscluster['assignments'] = clusterstats[0,cluster]
-        thiscluster['mean_distance'] = clusterstats[1,cluster]/clusterstats[0,cluster]
+        thiscluster['assignments'] = clusterstats[0,cluster].flatten().tolist()
+        dist = clusterstats[1,cluster]/clusterstats[0,cluster]
+        thiscluster['mean_distance'] = dist.flatten().tolist()
         result['topics'].append(thiscluster)
-        print 'Topic %s, %d articles'%(' '.join(thiscluster['topwords'][:3]),thiscluster['assignments'])
+        print 'Topic %s, %d articles'%(' '.join(thiscluster['topwords'][:3]),thiscluster['assignments'][0])
+    
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    with open(folder+'/newsresults-%s'%(datestr) + '.json', 'wb') as fp:
+        json.dump(result, fp)
     
     return result
 
