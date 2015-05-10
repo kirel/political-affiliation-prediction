@@ -89,11 +89,13 @@ class Classifier:
         return result
 
     def bow(self,text):
-        x = self.BoW['count_vectorizer'].transform([text.lower()])
+        if type(text) is not list:
+            text = [text]
+        x = self.BoW['count_vectorizer'].transform(text)
         if self.BoW.has_key('tfidf_transformer'):
             x = self.BoW['tfidf_transformer'].transform(x)
         return x
-
+   
     def train(self,folds = 4):
         '''
         trains a classifier on the bag of word vectors extracted with extract_bundestag speeches.py
