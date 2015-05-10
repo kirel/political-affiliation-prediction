@@ -4,32 +4,28 @@ import classifier
 from scipy import zeros,double
 import datetime
 import json
+import cPickle
 
 class Topicmodel():
     '''
     Wrapper class for different topic models
     
     '''
-    def __init__(self,folder='model',modeltype='kmeans',topics=10,topwords=100):
+    def __init__(self,folder='model',modeltype='kmeans',topics=100,topwords=10):
         # the classifier, which also contains the trained BoW transformer
-        clf = classifier.Classifier(folder=folder)    
-        self.bow = clf.bow
+        self.bow = cPickle.load(open(folder+'/BoW_transformer.pickle'))
         self.folder = folder
-        # transform word to BoW index into reverse lookup table
-        words = clf.BoW['count_vectorizer'].vocabulary_.values()
-        wordidx = clf.BoW['count_vectorizer'].vocabulary_.keys()
-        self.idx2word = dict(zip(words,wordidx))         
         self.modeltype = modeltype
         self.topics = topics
         self.topwords = topwords
         if self.modeltype is 'kmeans':
             from sklearn.cluster import KMeans
-            self.model = KMeans(n_clusters=topics)
+            self.model = KMeans(n_clusters=topics,n_init=50)
         if self.modeltype is 'kpcakmeans':
             from sklearn.cluster import KMeans
             from sklearn.decomposition import KernelPCA
-            self.model = {'kpca':KernelPCA(kernel='rbf',gamma=1.),\
-                'kmeans':KMeans(n_clusters=topics)}
+            self.model = {'kpca':KernelPCA(kernel='rbf',gamma=.1),\
+                'kmeans':KMeans(n_clusters=topics,n_init=50)}
         if self.modeltype is 'nmf':
             from sklearn.decomposition import NMF
             self.model = NMF(n_components=topics)
@@ -43,13 +39,20 @@ class Topicmodel():
         '''
 
         # transform list of strings into sparse BoW matrix
-        X = self.bow(X)
+        X = self.bow['tfidf_transformer'].fit_transform(\
+            self.bow['count_vectorizer'].fit_transform(X))
+
+        # transform word to BoW index into reverse lookup table
+        words = self.bow['count_vectorizer'].vocabulary_.values()
+        wordidx = self.bow['count_vectorizer'].vocabulary_.keys()
+        self.idx2word = dict(zip(words,wordidx))         
+
         # depending on the model, train
         if self.modeltype is 'kmeans':
             Xc = self.model.fit_predict(X)
         if self.modeltype is 'kpcakmeans':
-            self.model['kpca'].fit(X)
-            Xc = self.model['kmeans'].fit_predict(self.model['kpca'].transform(X))
+            Xc = self.model['kpca'].fit_transform(X)
+            Xc = self.model['kmeans'].fit_predict(Xc)
         if self.modeltype is 'nmf':
             Xc = self.model.fit_transform(X).argmax(axis=0)
         # for each cluster/topic compute covariance of word with cluster label
@@ -69,7 +72,7 @@ class Topicmodel():
 
             print 'Topic %d: %3d Assignments '%(cluster,y.sum())\
                 + 'Topwords: ' + ' '.join(topicwords.keys()[:10])
-        
+
         datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         fn = self.folder+'/topicmodel-%s-'%self.modeltype +datestr+'.json'
         print "Saving model stats to "+fn
@@ -82,7 +85,9 @@ class Topicmodel():
         INPUT
         X   list of strings
         '''
-        X = self.bow(X)
+        if X is not list: X = [X]
+        X = self.bow['tfidf_transformer'].transform(\
+            self.bow['count_vectorizer'].transform(X))
         if self.modeltype is 'kmeans':
             return self.model.predict(X)
         if self.modeltype is 'kpcakmeans':

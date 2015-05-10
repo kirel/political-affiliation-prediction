@@ -80,7 +80,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
 
-def cluster_news(folder='model', topics=20, topwords=100,modeltype='kpcakmeans'):
+def cluster_news(folder='model', topics=100, topwords=100,modeltype='kpcakmeans'):
     '''
     For better visualization, articles' BoW vectors are also clustered into topics
 
@@ -94,7 +94,7 @@ def cluster_news(folder='model', topics=20, topwords=100,modeltype='kpcakmeans')
     import glob,topicmodel
     # take most recent news file in model folder
     news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
-    # a topic model using vanilla sgd kmeans
+    # a topic model 
     tm = topicmodel.Topicmodel(folder=folder,modeltype=modeltype,\
             topics=topics,topwords=topwords)
     
