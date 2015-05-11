@@ -47,3 +47,15 @@ In python shell:
     from example import test_with_nested_CV
     test_with_nested_CV(folder='model')
 
+# Deployment
+
+    docker build -t kirel/political-affiliation-prediction -t
+    docker push kirel/political-affiliation-prediction
+
+To test the container locally:
+
+    docker run -i -t -p 5000:5000 kirel/political-affiliation-prediction
+
+To deploy:
+
+    TODO
