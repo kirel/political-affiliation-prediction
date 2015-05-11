@@ -1,0 +1,11 @@
+- hosts: docker
+  # roles:
+  #   - { role: kamaln7.swapfile, swapfile_size: 1GB, swapfile_swappiness: 10 }
+  tasks:
+    - apt: name=python-pip
+    - pip: name=docker-py
+    - name: run political-affiliation-prediction
+      docker: image=kirel/political-affiliation-prediction
+              ports=5000:5000
+              name=political-affiliation-prediction
+              state=running

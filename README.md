@@ -58,4 +58,5 @@ To test the container locally:
 
 To deploy:
 
-    TODO
+    pip install -r requirements.dev.txt
+    ansible-playbook ansible/deploy.yml -i ansible/inventory
