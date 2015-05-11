@@ -1,0 +1,2 @@
+;; Analyzed by ClojureScript 0.0-3196
+{:cljs.analyzer/constants {:order [:websocket-url :jsload-callback :verbose], :seen #{:verbose :jsload-callback :websocket-url}}, :imports nil, :requires {r reagent.core, reagent.core reagent.core, weasel weasel.repl, weasel.repl weasel.repl, figwheel figwheel.client, figwheel.client figwheel.client, web.core web.core, core web.core}, :uses nil, :require-macros {figwheel.client figwheel.client, figwheel figwheel.client}, :use-macros nil, :excludes #{}, :doc nil, :name web.dev}
