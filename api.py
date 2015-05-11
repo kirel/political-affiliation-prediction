@@ -33,6 +33,6 @@ if __name__ == "__main__":
     port = 5000
     classifier = Classifier()
     # Open a web browser pointing at the app.
-    os.system("open http://localhost:{0}".format(port))
+    # os.system("open http://localhost:{0}".format(port))
 
     app.run(port = port, debug = DEBUG)
