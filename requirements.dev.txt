@@ -1,2 +1,6 @@
 -r requirements.txt
 ansible==1.9.1
+ipython[all]==3.1.0
+matplotlib==1.4.3
+pandas==0.16.1
+ipdb==0.8
