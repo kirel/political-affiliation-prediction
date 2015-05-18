@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import cPickle
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d
-import urllib2
-from bs4 import BeautifulSoup
 import os
 from scipy.sparse import vstack
 from numpy.random import permutation
@@ -35,33 +33,6 @@ class Classifier:
         self.parties = clfdict['labels']
         # load Bag-of-Word extractor
         self.BoW = cPickle.load(open(self.folder+'/BoW_transformer.pickle'))
-
-    def predict_url(self, url, waittime=1):
-        '''
-        Calls 'predict' on the <p> elements of a webpage (presumably text) 
-
-        INPUT
-        url    a url (to e.g. a newspaper article page)
-        folder  the folder containing the classifier and BoW transformer pickles
-        
-        '''
-        text = ''
-        # load the website and parse the html
-        try:
-            text = urllib2.urlopen(url).read()
-        except:
-            print "Could not read %s, retrying in %fs"%(url,waittime)
-            try: 
-                sleep(waittime)
-                text = urllib2.urlopen(url).read()
-            except: 
-                print "Cound not read %s, aborting"
-        soup = BeautifulSoup(text)
-        # extract paragraphs and concatenate them together in one string
-        paragraphs = ' '.join(map((lambda x:x.getText()),soup.find_all('p')))
-        # call the classifier
-        return self.predict(paragraphs)
-
 
     def predict(self,text):
         '''
