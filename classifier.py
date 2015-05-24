@@ -11,6 +11,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from time import sleep
+from vectorizer import Vectorizer
 
 class Classifier:
 
@@ -34,7 +35,7 @@ class Classifier:
         self.clf = clfdict['classifier']
         self.parties = clfdict['labels']
         # load Bag-of-Word extractor
-        self.BoW = cPickle.load(open(self.folder+'/BoW_transformer.pickle'))
+        self.bow_vectorizer = Vectorizer(self.folder)
 
     def predict_url(self, url, waittime=1):
         '''
@@ -42,7 +43,7 @@ class Classifier:
 
         INPUT
         url    a url (to e.g. a newspaper article page)
-        folder  the folder containing the classifier and BoW transformer pickles
+        folder  the folder containing the classifier and bag-of-words transformer pickles
         
         '''
         text = ''
@@ -70,7 +71,7 @@ class Classifier:
 
         INPUT
         text    a string to assign to a party
-        folder  the folder containing the classifier and BoW transformer pickles
+        folder  the folder containing the classifier and bag-of-words transformer pickles
         
         '''
 
@@ -91,23 +92,20 @@ class Classifier:
     def bow(self,text):
         if type(text) is not list:
             text = [text]
-        x = self.BoW['count_vectorizer'].transform(text)
-        if self.BoW.has_key('tfidf_transformer'):
-            x = self.BoW['tfidf_transformer'].transform(x)
-        return x
+        return self.bow_vectorizer.transform(text)
    
     def train(self,folds = 4):
         '''
         trains a classifier on the bag of word vectors extracted with extract_bundestag speeches.py
 
         INPUT
-        folder  the folder to store the model file and load the BoW file
+        folder  the folder to store the model file and load the bag-of-words-vectorizer file
         folds   number of cross-validation folds for optimizing the regularizer of the classifier
 
         '''
         try:
             # load the data
-            fn = self.folder+'/BoW.pickle'
+            fn = self.folder+'/bag_of_words_%.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
             data = cPickle.load(open(fn))
         except:
             error('Could not load Bag-0f-Words file in %s'%sfn + \

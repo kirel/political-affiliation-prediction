@@ -1,0 +1,10 @@
+Wallclock time: 107.914275 sec
+Vocabulary size: 61083
+             precision    recall  f1-score   support
+
+      linke       0.73      0.69      0.71      2019
+     gruene       0.76      0.78      0.77      2572
+        spd       0.67      0.59      0.63      2200
+        cdu       0.70      0.75      0.72      3229
+
+avg / total       0.71      0.71      0.71     10020

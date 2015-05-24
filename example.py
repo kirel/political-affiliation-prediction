@@ -17,8 +17,28 @@ from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from classifier import *
 from sklearn.preprocessing import LabelBinarizer
+from vectorizer import Vectorizer
 
-def test_with_nested_CV(folder='model',folds=4, plot=False):
+def optimize_bow(folder='model'):
+    steps = [['stemming','trigrams','tfidf'],\
+             ['stemming','trigrams'],\
+             ['trigrams','tfidf'],\
+             ['trigrams'],\
+             ['stemming','bigrams','tfidf'],\
+             ['stemming','bigrams'],\
+             ['bigrams','tfidf'],\
+             ['bigrams'],\
+             ['stemming','unigrams','tfidf'],\
+             ['stemming','unigrams'],\
+             ['unigrams','tfidf'],\
+             ['unigrams'],\
+             ['hashing'],\
+             ]
+    for trysteps in steps:
+        print 'Trying %s'%'_'.join(sorted(trysteps))
+        test_with_nested_CV(folder=folder,steps=trysteps)
+
+def test_with_nested_CV(folder='model',folds=3, plot=False, steps=['hashing']):
     '''
     
     Evaluates the classifer by doing nested CV 
@@ -33,8 +53,14 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     folds   number of folds
 
     '''
+    # start timer
+    import time
+    t0 = time.time()
+    # create bag of words representations
+    vv = Vectorizer(steps=steps)
+
     # load data
-    data = cPickle.load(open(folder+'/BoW.pickle'))
+    data = cPickle.load(open(folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(steps))))
     # create numerical labels
     Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
     # create data matrix
@@ -51,29 +77,39 @@ def test_with_nested_CV(folder='model',folds=4, plot=False):
     predicted_prob = zeros((fsize*folds,len(data)))
         
     # the regularization parameters to choose from 
-    parameters = {'C': (10.**arange(-4,4,.5)).tolist()}
+    parameters = {'C': (10.**arange(-4,4,1.)).tolist()}
     
     # do nested CV
     for ifold in range(folds):
         testidx = idx[ifold,:]
         trainidx = idx[setdiff1d(arange(folds),ifold),:].flatten()
         text_clf = LogisticRegression(class_weight='auto',dual=True)
-        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+        # for nested CV, do folds-1 CV for parameter optimization
+        # within inner CV loop and use the outer testfold as held-out data
+        # for model validation
+        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=(folds-1))
         gs_clf.fit(X[trainidx,:],Y[trainidx])
         predicted[testidx] = gs_clf.predict(X[testidx,:])
         predicted_prob[testidx,:] = gs_clf.predict_proba(X[testidx,:])
         print '************ Fold %d *************'%(ifold+1)
         print metrics.classification_report(Y[testidx], predicted[testidx],target_names=data.keys()) 
     
+    t1 = time.time()
+    total_time = t1 - t0
+    timestr = 'Wallclock time: %f sec\n'%total_time
+    dimstr = 'Vocabulary size: %d\n'%X.shape[-1]
+    report = timestr + dimstr
     # extract some metrics
     print '********************************'
     print '************ Total *************'
     print '********************************'
-    report = metrics.classification_report(Y, predicted,target_names=data.keys())
+    report += metrics.classification_report(Y, predicted,target_names=data.keys())
     # dump metrics to file
-    open(folder+'/report.txt','wb').write(report)
+    open(folder+'/report_%s.txt'%'_'.join(sorted(steps)),'wb').write(report)
     print(report)
-    print(metrics.confusion_matrix(Y,predicted))
+    conf_mat = metrics.confusion_matrix(Y,predicted)
+    open(folder+'/conf_mat_%s.txt'%'_'.join(sorted(steps)),'wb').write(conf_mat)
+    print(conf_mat)
     
     if plot:
         # print confusion matrix

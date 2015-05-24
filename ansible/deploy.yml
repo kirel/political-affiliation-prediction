@@ -1,8 +1,14 @@
 - hosts: docker
+  sudo: yes
+  roles:
+    - angstwad.docker_ubuntu
+
   # roles:
   #   - { role: kamaln7.swapfile, swapfile_size: 1GB, swapfile_swappiness: 10 }
   tasks:
-    - apt: name=python-pip
+    - apt:
+        name: python-pip
+        update_cache: yes
     - pip: name=docker-py
     - name: run political-affiliation-prediction
       docker: image=kirel/political-affiliation-prediction

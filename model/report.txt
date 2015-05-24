@@ -1,8 +1,0 @@
-             precision    recall  f1-score   support
-
-     90/die       0.77      0.78      0.78      2573
-    cdu/csu       0.71      0.77      0.74      3228
-        spd       0.66      0.61      0.63      2200
-  die linke       0.77      0.72      0.74      2019
-
-avg / total       0.73      0.73      0.73     10020

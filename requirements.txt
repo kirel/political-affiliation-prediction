@@ -7,4 +7,5 @@ MarkupSafe==0.23
 numpy==1.9.2
 scipy==0.15.0
 scikit-learn==0.16.0
+PyStemmer
 Werkzeug==0.10.4
