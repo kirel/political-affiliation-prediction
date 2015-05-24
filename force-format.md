@@ -2,7 +2,7 @@
 
     {
       articles: [
-        { title: "...", url: "http://...", predictions: { cdu: 0.5, ... }, predictedLabel: 'cdu' },
+        { title: "...", url: "http://...", prediction: [{ party: "cdu", probability: 0.5 }, ...], predictedLabel: 'cdu' },
         { ... },
         ...
       ],
