@@ -7,7 +7,7 @@ Install [virualenv(-wrapper)](https://virtualenvwrapper.readthedocs.org/en/lates
     mkvirtualenv political-affiliation-prediction
     # or
     workon political-affiliation-prediction
-    pip install -r requirements.txt
+    pip install -r requirements.dev.txt
 
 ## Start server with pretrained classifier    
 
