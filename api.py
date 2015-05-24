@@ -6,24 +6,29 @@ from classifier import Classifier
 # from downloader import Downloader
 from retrying import retry
 import urllib2
-from readability.readability import Document
 from bs4 import BeautifulSoup
 
 DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
 
 @retry(stop_max_attempt_number=5)
-def fetch_url(url):
+def fetch_url(url, readable=False):
     '''
     get url with readability
     '''
     html = urllib2.urlopen(url).read()
-    readable_article = Document(html).summary()
-    readable_title = Document(html).short_title() # unused
+    if readable: 
+        from readability.readability import Document
+        readable_article = Document(html).summary()
+        readable_title = Document(html).short_title() # unused
 
-    soup = BeautifulSoup(readable_article)
+        soup = BeautifulSoup(readable_article)
 
-    return soup.get_text()
+        return soup.get_text()
+    else:
+        soup = BeautifulSoup(html)
+        # extract paragraphs and concatenate them together in one string
+        return ' '.join(map((lambda x:x.getText()),soup.find_all('p')))
 
 @app.route("/")
 def index():

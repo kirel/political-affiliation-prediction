@@ -65,7 +65,7 @@ class Classifier:
             text = [text]
         return self.bow_vectorizer.transform(text)
    
-    def train(self,folds = 4):
+    def train(self,folds = 2):
         '''
         trains a classifier on the bag of word vectors extracted with extract_bundestag speeches.py
 
@@ -79,8 +79,9 @@ class Classifier:
             fn = self.folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
             data = cPickle.load(open(fn))
         except:
-            error('Could not load Bag-0f-Words file in %s'%fn + \
-                'Try executing [python downloader.py --download --parse --transform]')
+            print('Could not load Bag-0f-Words file in %s\n'%fn + \
+                  'Try executing [python downloader.py --download --parse --transform]')
+            raise
         # create numerical labels for each party
         Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
         # create the data matrix
@@ -96,7 +97,7 @@ class Classifier:
         # the regularizer
         parameters = {'C': (10.**arange(-5,5,1.)).tolist()}
         # perform gridsearch to get the best regularizer
-        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=2)
+        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=folds)
         gs_clf.fit(X,Y)
         print metrics.classification_report(Y,gs_clf.predict(X),target_names=data.keys())
         # dump classifier to pickle

@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,median
 from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
@@ -27,6 +27,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
 
     '''
     import classifier
+    from api import fetch_url
     
     news = dict([(source,[]) for source in sources])  
     # the classifier for prediction of political affiliation
@@ -73,7 +74,16 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
          
         # predict party from url for this source
         print "Predicting %s"%source
-        news[source] = dict([(url,clf.predict_url(url)) for url in urls])
+        articles = []
+        for url in urls:
+            try:
+                prediction = clf.predict(fetch_url(url))
+                articles.append((url,prediction))
+            except:
+                print('Could not get text from %s'%url)
+                pass
+
+        news[source] = dict(articles)
 
     # save results
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -121,6 +131,54 @@ def cluster_news(folder='model', topics=100, topwords=100,modeltype='kpcakmeans'
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/articles-%s'%(datestr)+'.json', 'wb').write(json.dumps(articles))
 
+def pairwise_distance(folder='model',nneighbors=10):
+    '''
+
+    Computes pairwise distances between bag-of-words vectors of articles
+
+    INPUT
+    folder      model folder
+    nneighbors  number of closest neighbors to include in distance list
+
+    '''
+    import glob
+    from sklearn.metrics.pairwise import rbf_kernel
+    from sklearn.metrics.pairwise import pairwise_distances
+    from vectorizer import Vectorizer
+    # take most recent news file in model folder
+    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
+    # collect text data from all articles
+    data,articles = [],[]
+    for source in news.keys():
+        for url,article in news[source].items():
+            data.append(article['text'])
+            predictions = [prediction['probability'] for prediction in article['prediction']]
+            articles.append(
+            {   'source':source,\
+                'title':url,\
+                'url':url,\
+                'prediction':article['prediction'],\
+                'predictedLabel':article['prediction'][argmax(predictions)]['party']})
+    # a bag-of-words transformer 
+    bow = Vectorizer(folder=folder,steps=['hashing','tfidf']) 
+    X = bow.transform(data)
+
+    # use median for kernel width
+    medianDist = median(pairwise_distances(X,metric='l2').flatten())
+    # compute gauss kernel
+    K = rbf_kernel(bow.transform(data), gamma=medianDist) - eye(X.shape[0])
+    # collect closest neighbors
+    distances = []
+    for urlidx in range(len(data)):
+        idx = (1 - K[urlidx,:]).argsort()[-nneighbors:]
+        for sidx in idx:
+            distances.append([urlidx,sidx,1-K[urlidx,sidx]])
+
+    result = {'articles':articles,'distances':distances}
+    # save article with party prediction and distances to closest articles
+    datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
+    
 
 def embed_news(folder='model', topics=2, modeltype='kpca'):
     '''
