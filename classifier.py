@@ -26,6 +26,8 @@ class Classifier:
 
         '''
         self.folder = folder
+        # load Bag-of-Word extractor
+        self.bow_vectorizer = Vectorizer(self.folder)
         # if there is no classifier file or training is invoked
         if (not os.path.isfile(self.folder+'/classifier.pickle')) or train:
             print 'Training classifier'
@@ -34,8 +36,6 @@ class Classifier:
         clfdict = cPickle.load(open(self.folder+'/classifier.pickle'))
         self.clf = clfdict['classifier']
         self.parties = clfdict['labels']
-        # load Bag-of-Word extractor
-        self.bow_vectorizer = Vectorizer(self.folder)
 
     def predict_url(self, url, waittime=1):
         '''
@@ -105,10 +105,10 @@ class Classifier:
         '''
         try:
             # load the data
-            fn = self.folder+'/bag_of_words_%.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
+            fn = self.folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
             data = cPickle.load(open(fn))
         except:
-            error('Could not load Bag-0f-Words file in %s'%sfn + \
+            error('Could not load Bag-0f-Words file in %s'%fn + \
                 'Try executing [python downloader.py --download --parse --transform]')
         # create numerical labels for each party
         Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
