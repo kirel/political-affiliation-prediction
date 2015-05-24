@@ -9,9 +9,22 @@ Install [virualenv(-wrapper)](https://virtualenvwrapper.readthedocs.org/en/lates
     workon political-affiliation-prediction
     pip install -r requirements.dev.txt
 
+and for the frontend
+
+- Install ruby e.g. via https://github.com/sstephenson/rbenv#homebrew-on-mac-os-x
+
+    cd web
+    bundle
+
 ## Start server with pretrained classifier    
 
     DEBUG=1 python api.py
+
+## Frontend
+
+    cd web
+    bundle
+    dotenv bundle exec middleman
 
 ## Test with party-specific buzzwords
 

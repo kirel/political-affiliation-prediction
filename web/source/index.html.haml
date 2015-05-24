@@ -1,0 +1,31 @@
+---
+title: Welcome to Middleman
+---
+.container
+  .row
+    .col-md-12{:role => "main"}
+      %h1.page-header Partypredictor*
+      %form{:role => "form"}
+        .form-group
+          .col-xs-7
+            %label{:for => "text_query"} Mit Text
+            %textarea#text_query.form-control{:placeholder => "Hier einen Text reinpasten"}
+            %button#submit_text.btn.btn-default{:type => "button"} Submit Text
+          .col-xs-5
+            %label{:for => "submit_url"} Mit URL
+            %textarea#url_query.form-control{:placeholder => "Hier eine URL zu einem Text reinpasten"}
+            %button#submit_url.btn.btn-default{:type => "button"} Submit URL
+    %svg
+    %p.lead
+      *Der Text wird in einen
+      %a{:href => "http://en.wikipedia.org/wiki/Tf%E2%80%93idf"} Tf-idf
+      normalisierten
+      %a{:href => "http://en.wikipedia.org/wiki/Bag-of-words_model"} Bag-of-Words Vektor
+      transformiert. Diese Darstellung misst Worthäufigkeiten, wobei seltene Wörter höher gewichtet werden; Wortstruktur wird nicht berücksichtigt. In dieser Vektordarstellung weist eine
+      %a{:href => "http://en.wikipedia.org/wiki/Multinomial_logistic_regression"} Multiclass Logistic Regression
+      den Text einer
+      %a{:href => "https://www.bundestag.de/bundestag/fraktionen"} Fraktion des Deutschen Bundestages
+      zu. Der Classifier wurde trainiert auf den Bag-of-Words Vektoren der
+      = succeed "." do
+        %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
+

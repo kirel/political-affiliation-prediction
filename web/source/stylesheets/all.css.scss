@@ -1,0 +1,23 @@
+@charset "utf-8";
+
+@import "bootstrap-sass";
+
+body {
+  font: sans-serif;
+  font-size: 10px;
+  background: #FCFCFA;
+}
+
+svg {
+  display: block;
+  margin: 0 auto 3em auto;
+}
+
+.arc path { stroke: #FFF; }
+.arc text { fill: #000; }
+
+.arc.cdu    path { fill: #121212; }
+.arc.cdu    text { fill: #FFF;   }
+.arc.spd    path { fill: #D52326; }
+.arc.linke  path { fill: #BD3476; }
+.arc.gruene path { fill: #7BBB2E; }

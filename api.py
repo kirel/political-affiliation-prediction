@@ -9,14 +9,6 @@ DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
 
 @app.route("/")
-def index():
-    """
-    When you request the root path, you'll get the index.html template.
-
-    """
-    return render_template("index.html")
-
-@app.route("/")
 def root():
     return jsonify(dict(message='political affiliation prediction api', version=VERSION))
 
