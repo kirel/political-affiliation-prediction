@@ -1,5 +1,5 @@
 model/textdata
-model/*.pickle
+model/**/*.pickle
 
 .ipynb_checkpoints
 
