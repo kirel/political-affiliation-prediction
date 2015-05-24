@@ -9,3 +9,5 @@ scipy==0.15.0
 scikit-learn==0.16.0
 PyStemmer
 Werkzeug==0.10.4
+retrying==1.3.3
+readability

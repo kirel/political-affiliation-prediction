@@ -4,9 +4,26 @@ app = Flask(__name__)
 
 from classifier import Classifier
 # from downloader import Downloader
+from retrying import retry
+import urllib2
+from readability.readability import Document
+from bs4 import BeautifulSoup
 
 DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
+
+@retry(stop_max_attempt_number=5)
+def fetch_url(url):
+    '''
+    get url with readability
+    '''
+    html = urllib2.urlopen(url).read()
+    readable_article = Document(html).summary()
+    readable_title = Document(html).short_title() # unused
+
+    soup = BeautifulSoup(readable_article)
+
+    return soup.get_text()
 
 @app.route("/")
 def index():
@@ -24,7 +41,8 @@ def root():
 def predict():
     if request.form.has_key('url'):
         url = request.form['url']
-        return jsonify(classifier.predict_url(url))
+        text = fetch_url(url)
+        return jsonify(classifier.predict(text))
     else:
         text = request.form['text']
         return jsonify(classifier.predict(text))
