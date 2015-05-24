@@ -47,6 +47,12 @@ In python shell:
     from example import test_with_nested_CV
     test_with_nested_CV(folder='model')
 
+## Visualization & Exploration
+
+    $ ipython notebook
+
+Then check the notebooks i.e. [visualization.ipynb](visualization.ipynb)
+
 # Deployment
 
     docker build -t kirel/political-affiliation-prediction -t
