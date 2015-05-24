@@ -13,7 +13,7 @@ class Vectorizer:
 
     '''
     
-    def __init__(self,folder='model',steps=['trigrams','tfidf'],train=False):
+    def __init__(self,folder='model',steps=['hashing','tfidf'],train=False):
         '''
         Initialize Vectorizer
         Loads or trains bow vectorizer
@@ -52,7 +52,7 @@ class Vectorizer:
         # the count vectorizer of scikit learn
         if 'hashing' in self.steps:
             print 'Hashing Bag of words vectorizer'
-            count_vect = HashingVectorizer(ngram_range=(1,3)).fit(text) 
+            count_vect = HashingVectorizer(ngram_range=(1,5)).fit(text) 
         elif 'trigrams' in self.steps:
             print "Trigram Bag-of-Words"
             count_vect = CountVectorizer(ngram_range=(1,3),min_df=2).fit(text)
