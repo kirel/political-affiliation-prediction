@@ -136,6 +136,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  coffee-script
   dotenv
   haml
   middleman (~> 3.3.10)
