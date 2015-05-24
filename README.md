@@ -16,15 +16,16 @@ and for the frontend
     cd web
     bundle
 
-## Start server with pretrained classifier    
+## Start server with pretrained classifier
 
     DEBUG=1 python api.py
 
-## Frontend
+## Start the frontend development server
 
     cd web
-    bundle
     dotenv bundle exec middleman
+
+REMARK: The frontend needs the backend running!
 
 ## Test with party-specific buzzwords
 
