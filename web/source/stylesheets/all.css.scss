@@ -2,6 +2,13 @@
 
 @import "bootstrap-sass";
 
+$gruene: #7BBB2E;
+$cdu: #121212;
+$spd: #D52326;
+$linke: #BD3476;
+
+@import "network-chart";
+
 body {
   font: sans-serif;
   font-size: 10px;
@@ -16,8 +23,8 @@ svg {
 .arc path { stroke: #FFF; }
 .arc text { fill: #000; }
 
-.arc.cdu    path { fill: #121212; }
+.arc.cdu    path { fill: $cdu; }
 .arc.cdu    text { fill: #FFF;   }
-.arc.spd    path { fill: #D52326; }
-.arc.linke  path { fill: #BD3476; }
-.arc.gruene path { fill: #7BBB2E; }
+.arc.spd    path { fill: $spd; }
+.arc.linke  path { fill: $linke; }
+.arc.gruene path { fill: $gruene; }

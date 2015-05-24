@@ -1,7 +1,7 @@
 ---
 title: Welcome to Middleman
 ---
-.container
+.container(ng-app='pp')
   .row
     .col-md-12{:role => "main"}
       %h1.page-header Partypredictor*
@@ -15,7 +15,7 @@ title: Welcome to Middleman
             %label{:for => "submit_url"} Mit URL
             %textarea#url_query.form-control{:placeholder => "Hier eine URL zu einem Text reinpasten"}
             %button#submit_url.btn.btn-default{:type => "button"} Submit URL
-    %svg
+    %svg#prediction
     %p.lead
       *Der Text wird in einen
       %a{:href => "http://en.wikipedia.org/wiki/Tf%E2%80%93idf"} Tf-idf
@@ -29,3 +29,5 @@ title: Welcome to Middleman
       = succeed "." do
         %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
+    #network
+      %network-chart

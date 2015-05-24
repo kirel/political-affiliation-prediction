@@ -1,7 +1,8 @@
-//= require_tree .
+//= require lodash
 //= require jQuery
 //= require d3
 //= require angular
+//= require_tree .
 
 $(function () {
 
@@ -20,7 +21,7 @@ $(function () {
       .endAngle(Math.PI/2)
       .value(function(d) { return d.probability });
 
-  var svg = d3.select('svg')
+  var svg = d3.select('svg#prediction')
       .attr('width', width)
       .attr('height', height)
       .append('g')
