@@ -47,6 +47,14 @@ In python shell:
     from example import test_with_nested_CV
     test_with_nested_CV(folder='model')
 
+## Download Newspaper articles
+
+In python shell:
+    
+    from downloader import get_news, pairwise_distance
+    get_news()
+    pairwise_distance()
+
 # Deployment
 
     docker build -t kirel/political-affiliation-prediction -t
