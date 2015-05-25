@@ -52,7 +52,7 @@ class Vectorizer:
         # the count vectorizer of scikit learn
         if 'hashing' in self.steps:
             print 'Hashing Bag of words vectorizer'
-            count_vect = HashingVectorizer(ngram_range=(1,5)).fit(text) 
+            count_vect = HashingVectorizer(ngram_range=(1,5),decode_error='ignore').fit(text) 
         elif 'trigrams' in self.steps:
             print "Trigram Bag-of-Words"
             count_vect = CountVectorizer(ngram_range=(1,3),min_df=2).fit(text)
