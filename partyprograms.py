@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import re
 import cPickle
-from vectorizer import Vectorizer
+from classifier import Classifier
 import json
-import codecs
+from scipy import ones,argmax
+from sklearn.metrics import classification_report,confusion_matrix
 
 def partyprograms(folder='model'):
-    vv = Vectorizer(folder)
+    clf = Classifier(folder=folder)
     # converted with pdftotext
     text = {}
     bow = {}
@@ -56,8 +57,25 @@ def partyprograms(folder='model'):
     text['gruene'] = txt
     
     json.dump(text,open(folder+'/textdata/programs.json', 'wb'),ensure_ascii=False)
+    predictions,predictions_total = dict(),dict()
+    Ytrue, Yhat = [],[]
     for key in text.keys():
-        bow[key] = vv.transform(text[key])
-    cPickle.dump(bow,open(folder+'/textdata/bag_of_words_programs.pickle','wb'),-1)
+        predictions[key] = []
+        # for each paragraph separately
+        for paragraph in text[key]:
+            prediction = clf.predict(paragraph)['prediction']
+            idx = argmax([x['probability'] for x in prediction])
+            Yhat.append(text.keys().index(prediction[idx]['party']))
+            predictions[key].append(prediction)
+        #predictions[key] = map(lambda x: clf.predict(x)['prediction'],text[key])
+        # for the entire program at once
+        predictions_total[key] = clf.predict(' '.join(text[key]))['prediction']
+        Ytrue.extend(ones(len(text[key]))*text.keys().index(key))
+        
+    print(confusion_matrix(Ytrue,Yhat))
+    print(classification_report(Ytrue,Yhat))
+
+    json.dump(predictions,open(folder+'/textdata/predictions.json','wb'),ensure_ascii=False)
+    json.dump(predictions_total,open(folder+'/textdata/predictions_total.json','wb'),ensure_ascii=False)
 
     
