@@ -1,12 +1,25 @@
 network-chart
-  .node.cdu circle, .slice.cdu path
+  .node.cdu circle, .slice.cdu path, .hull.cdu
     fill: $cdu
-  .node.spd circle, .slice.spd path
+  .node.spd circle, .slice.spd path, .hull.spd
     fill: $spd
-  .node.gruene circle, .slice.gruene path
+  .node.gruene circle, .slice.gruene path, .hull.gruene
     fill: $gruene
-  .node.linke circle, .slice.linke path
+  .node.linke circle, .slice.linke path, .hull.linke
     fill: $linke
+
+  .hull
+    opacity: 0.1
+    stroke-width: 40px
+    stroke-linejoin: round
+    &.cdu
+      stroke: $cdu
+    &.spd
+      stroke: $spd
+    &.gruene
+      stroke: $gruene
+    &.linke
+      stroke: $linke
 
   .link
     stroke: rgba(240, 240, 240, .5)
