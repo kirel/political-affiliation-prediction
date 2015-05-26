@@ -7,28 +7,22 @@ from classifier import Classifier
 from retrying import retry
 import urllib2
 from bs4 import BeautifulSoup
+from readability.readability import Document
 
 DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
 
 @retry(stop_max_attempt_number=5)
-def fetch_url(url, readable=False):
+def fetch_url(url):
     '''
     get url with readability
     '''
     html = urllib2.urlopen(url).read()
-    if readable: 
-        from readability.readability import Document
-        readable_article = Document(html).summary()
-        readable_title = Document(html).short_title() # unused
+    readable_article = Document(html).summary()
+    title = Document(html).short_title()
+    text = BeautifulSoup(readable_article).get_text()
 
-        soup = BeautifulSoup(readable_article)
-
-        return soup.get_text()
-    else:
-        soup = BeautifulSoup(html)
-        # extract paragraphs and concatenate them together in one string
-        return ' '.join(map((lambda x:x.getText()),soup.find_all('p')))
+    return title,text
 
 @app.route("/")
 def index():
@@ -46,7 +40,7 @@ def root():
 def predict():
     if request.form.has_key('url'):
         url = request.form['url']
-        text = fetch_url(url)
+        text,title = fetch_url(url)
         return jsonify(classifier.predict(text))
     else:
         text = request.form['text']

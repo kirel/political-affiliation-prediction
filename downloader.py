@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,median
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
@@ -77,8 +77,10 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
         articles = []
         for url in urls:
             try:
-                prediction = clf.predict(fetch_url(url))
-                articles.append((url,prediction))
+                title,text = fetch_url(url)
+                prediction = clf.predict(text)
+                prediction['url'] = url
+                articles.append((title,prediction))
             except:
                 print('Could not get text from %s'%url)
                 pass
@@ -89,49 +91,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
-
-def cluster_news(folder='model', topics=100, topwords=100,modeltype='kpcakmeans'):
-    '''
-    For better visualization, articles' BoW vectors are also clustered into topics
-
-    INPUT
-    folder      the model folder containing classifier and BoW transformer
-                if folder ends with .json it is assumed to be the news.json file
-    topics      number of topics for topic modelling (default 20)
-    topwords    number of words for representing a cluster center (default 100)
-    modeltype   type of algorithm for topic modeling, see Topicmodel class
-    '''
-    import glob,topicmodel
-    # take most recent news file in model folder
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
-    # a topic model 
-    tm = topicmodel.Topicmodel(folder=folder,modeltype=modeltype,\
-            topics=topics,topwords=topwords)
-    
-    # collect text data from all articles
-    data = []
-    for source in news.keys():
-        data.extend([article['text'] for article in news[source].values()])
-
-    # train topic model on all data
-    print 'Training %s topic model on %d data points'%(modeltype,len(data))
-    tm.fit(data)
-   
-    articles = dict()
-    # Now that the clusters are fit, we assign articles to topics
-    for source in news.keys():
-        for article in news[source].keys():
-            # extract the topic assignment
-            ass = tm.predict(news[source][article]['text']) 
-            # store topic information associated with article
-            articles[article] = {'prediction':news[source][article]['prediction'],\
-                'topic':ass.flatten().tolist()[0]}
-
-    # save article with party prediction and cluster assignments
-    datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/articles-%s'%(datestr)+'.json', 'wb').write(json.dumps(articles))
-
-def pairwise_distance(folder='model',nneighbors=10):
+def pairwise_distance(folder='model',nneighbors=5):
     '''
 
     Computes pairwise distances between bag-of-words vectors of articles
@@ -150,76 +110,36 @@ def pairwise_distance(folder='model',nneighbors=10):
     # collect text data from all articles
     data,articles = [],[]
     for source in news.keys():
-        for url,article in news[source].items():
+        for title,article in news[source].items():
             data.append(article['text'])
             predictions = [prediction['probability'] for prediction in article['prediction']]
             articles.append(
             {   'source':source,\
-                'title':url,\
-                'url':url,\
+                'title':title,\
+                'url':article['url'],\
                 'prediction':article['prediction'],\
                 'predictedLabel':article['prediction'][argmax(predictions)]['party']})
     # a bag-of-words transformer 
-    bow = Vectorizer(folder=folder,steps=['hashing','tfidf']) 
+    bow = Vectorizer(folder=folder) 
     X = bow.transform(data)
-
+    #
     # use median for kernel width
-    medianDist = median(pairwise_distances(X,metric='l2').flatten())
+    perc = 100./len(article['prediction'])
+    medianDist = percentile(pairwise_distances(X,metric='l2').flatten(),perc)
     # compute gauss kernel
-    K = rbf_kernel(bow.transform(data), gamma=medianDist) - eye(X.shape[0])
+    K = rbf_kernel(X, gamma=medianDist/2.) - eye(X.shape[0]) * (1+1e-5)
     # collect closest neighbors
     distances = []
     for urlidx in range(len(data)):
-        idx = (1 - K[urlidx,:]).argsort()[-nneighbors:]
+        idx =  (1./K[urlidx,:]).argsort()[1:nneighbors+1]
         for sidx in idx:
-            distances.append([urlidx,sidx,1-K[urlidx,sidx]])
+            distances.append([urlidx,sidx,1./K[urlidx,sidx]])
 
     result = {'articles':articles,'distances':distances}
     # save article with party prediction and distances to closest articles
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
     
-
-def embed_news(folder='model', topics=2, modeltype='kpca'):
-    '''
-    For better visualization, articles' BoW vectors are also clustered into topics
-
-    INPUT
-    folder      the model folder containing classifier and BoW transformer
-                if folder ends with .json it is assumed to be the news.json file
-    topics      embedding dimension
-    modeltype   type of algorithm for topic modeling, see Topicmodel class
-    '''
-    import glob,embedding
-    # take most recent news file in model folder
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
-    # a topic model 
-    tm = embedding.TopicEmbeddingModel(folder=folder,modeltype=modeltype,\
-            topics=topics)
-    
-    # collect text data from all articles
-    data = []
-    for source in news.keys():
-        data.extend([article['text'] for article in news[source].values()])
-
-    # train topic model on all data
-    print 'Training %s topic model on %d data points'%(modeltype,len(data))
-    tm.fit(data)
-   
-    articles = dict()
-    # Now that the clusters are fit, we assign articles to topics
-    for source in news.keys():
-        for article in news[source].keys():
-            # extract the topic assignment
-            ass = tm.predict(news[source][article]['text']) 
-            # store topic information associated with article
-            articles[article] = {'prediction':news[source][article]['prediction'],\
-                'topic':ass.flatten().tolist()}
-
-    # save article with party prediction and cluster assignments
-    datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/articles-%s'%(datestr)+'.json', 'wb').write(json.dumps(articles))
-
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \
                 suffix='-data.txt'):
