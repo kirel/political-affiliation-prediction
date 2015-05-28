@@ -124,10 +124,10 @@ def pairwise_distance(folder='model',nneighbors=5):
     X = bow.transform(data)
     #
     # use median for kernel width
-    perc = 100./len(article['prediction'])
+    perc = 100 - 100./len(article['prediction'])
     medianDist = percentile(pairwise_distances(X,metric='l2').flatten(),perc)
     # compute gauss kernel
-    K = rbf_kernel(X, gamma=medianDist/2.) - eye(X.shape[0]) * (1+1e-5)
+    K = rbf_kernel(X, gamma=medianDist) - eye(X.shape[0]) * (1+1e-5)
     # collect closest neighbors
     distances = []
     for urlidx in range(len(data)):
