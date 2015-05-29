@@ -23,24 +23,24 @@ network-chart
       stroke: $linke
 
   .voronoi-patch
-    fill: none
-    stroke: rgba(240, 240, 240, .5)
-    // pointer-events: none
-    fill: transparent
-    &.active
-      fill: rgba(255,0,0,.1)
+    path
+      fill: none
+      stroke: rgba(240, 240, 240, .5)
+      // pointer-events: none
+      fill: transparent
+      &.active
+        fill: rgba(255,0,0,.1)
 
   .link
     stroke: rgba(240, 240, 240, .5)
 
   .node
-    a
+    text
       transition: opacity .5s
-      // filter: 0 0 3px #fff
       opacity: 0
       font: 12px sans-serif
       pointer-events: none
     &.active
-      a
+      text
         opacity: 1
         pointer-events: all

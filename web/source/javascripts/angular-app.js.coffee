@@ -102,7 +102,7 @@ app.directive 'networkChart', (Network) ->
 
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
-      node.append('a').attr('xlink:href', (d) -> d.url)
+      node
         .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
           d.title
       arcs = node.each (article) ->
@@ -115,7 +115,8 @@ app.directive 'networkChart', (Network) ->
       node.append('circle').attr('cx', 0).attr('cy', 0).attr('r', circleSize)
 
       # voronoi selectors
-      voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes).enter().append('path').attr('class', 'voronoi-patch')
+      voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes)
+        .enter().append('a').attr('class', 'voronoi-patch').attr('xlink:href', (d) -> d.url).append('path')
       # voronoiPatches = node.append('path').attr('class', 'voronoi-patch')
       voronoiPatches.on('mouseover', (d) -> d.active = true; console.log('active'); updateActive()).on('mouseout', (d) -> d.active = false; updateActive())
 
