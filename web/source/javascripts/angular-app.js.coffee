@@ -102,6 +102,7 @@ app.directive 'networkChart', (Network) ->
 
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
+      node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
       node
         .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
           d.title
@@ -112,7 +113,7 @@ app.directive 'networkChart', (Network) ->
           .append('path')
           .attr('d', arc)
 
-      node.append('circle').attr('cx', 0).attr('cy', 0).attr('r', circleSize)
+      node.append('circle').attr('class', 'partyIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize)
 
       # voronoi selectors
       voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes)
