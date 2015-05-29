@@ -42,6 +42,9 @@ network-chart
       opacity: 0
       transform: scale(0)
       transition: all .4s cubic-bezier(0, 1.8, 1, 1.8)
+    .slice
+      transition: all .4s cubic-bezier(0, 1.8, 1, 1.8)
+      transform: scale(1)
     text
       transition: opacity .5s
       opacity: 0
@@ -51,6 +54,8 @@ network-chart
       .selectionIndicator
         opacity: 1
         transform: scale(1)
+      .slice
+        transform: scale(2)
       text
         opacity: 1
         pointer-events: all
