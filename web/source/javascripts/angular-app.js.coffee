@@ -27,23 +27,25 @@ window.article = do ->
 
 NUM = 100
 
-app.factory 'Network', ($q) ->
-  articles = _.times(NUM, article)
-  indexes = [0...articles.length]
-  distances = _.map pairwise(indexes), (pair) ->
-    # using manhattan distance for speed
-    vecs = _.map pair, (index) -> _.map(articles[index].prediction, 'probability')
-    pair.concat [_.sum(_.zipWith(vecs..., (a, b) -> Math.abs(a-b)))]
+app.factory 'Network', ($q, $http) ->
+  # articles = _.times(NUM, article)
+  # indexes = [0...articles.length]
+  # distances = _.map pairwise(indexes), (pair) ->
+  #   # using manhattan distance for speed
+  #   vecs = _.map pair, (index) -> _.map(articles[index].prediction, 'probability')
+  #   pair.concat [_.sum(_.zipWith(vecs..., (a, b) -> Math.abs(a-b)))]
+  #
+  # $q.when
+  #   articles: articles
+  #   distances: distances
 
-  $q.when
-    articles: articles
-    distances: distances
+  $http.get('distances.json').then (response) -> response.data
 
 app.directive 'networkChart', (Network) ->
   link: (scope, elem, attrs) ->
     # preparing
-    width = 500
-    height = 500
+    width = 800
+    height = 800
     diag = Math.sqrt(width**2+height**2)
     minSide = Math.min(width, height)
 
@@ -70,6 +72,7 @@ app.directive 'networkChart', (Network) ->
         target: entry[1]
         distance: entry[2]
       maxDistance = _.max(links, 'distance').distance
+      fitScale = 1
       num = nodes.length
       circleSize = 20/Math.log2(nodes.length)
       innerRadius = circleSize * 1.5
@@ -78,17 +81,30 @@ app.directive 'networkChart', (Network) ->
         .innerRadius(innerRadius)
         .outerRadius(outerRadius)
       force
-        .linkDistance((l) -> l.distance/maxDistance*minSide*0.8)
+        .linkDistance((l) -> l.distance)
         .nodes(nodes)
         .links(links)
         .start()
 
+      # voronoi
+      voronoi = d3.geom.voronoi().x((n) -> n.x).y((n) -> n.y)
+      calculateVoronoi = ->
+        _.zipWith(nodes, voronoi(nodes), (node, patch) -> node.voronoiArea = patch)
+      calculateVoronoi()
+
+      # hulls
       hulls = svg.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
       hull = d3.geom.hull().x((node) -> node.x).y((node) -> node.y)
-      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('cardinal-closed')
+      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('linear-closed')
+      updateActive = ->
+        node.classed('active', (d) -> d.active)
+        voronoiPatches.classed('active', (d) -> d.active)
 
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
+      node.append('a').attr('xlink:href', (d) -> d.url)
+        .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
+          d.title
       arcs = node.each (article) ->
         slices = d3.select(@).selectAll('.slice').data(pie(article.prediction))
         slices.enter().append('g')
@@ -97,9 +113,23 @@ app.directive 'networkChart', (Network) ->
           .attr('d', arc)
 
       node.append('circle').attr('cx', 0).attr('cy', 0).attr('r', circleSize)
-      node.append('a').attr('xlink:href', (d) -> d.url)
-        .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
-          d.title
+
+      # voronoi selectors
+      voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes).enter().append('path').attr('class', 'voronoi-patch')
+      # voronoiPatches = node.append('path').attr('class', 'voronoi-patch')
+      voronoiPatches.on('mouseover', (d) -> d.active = true; console.log('active'); updateActive()).on('mouseout', (d) -> d.active = false; updateActive())
+
+      updateScale = ->
+        diameter = _.max _.map(pairwise(d3.geom.hull().x((node) -> node.x).y((node) -> node.y)(nodes)), (pair) ->
+          [a,b] = pair
+          Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)
+        )
+        growthRate = 0.05
+        fitScale = fitScale * (1+growthRate) if diameter < minSide * 0.8
+        fitScale = fitScale / (1+growthRate) if diameter > minSide * 0.8 * (1+growthRate)
+        force.linkDistance((l) -> l.distance*fitScale).start()
+
+      calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
       force.on 'tick', ->
         # link.attr('x1', (d) ->
@@ -117,5 +147,8 @@ app.directive 'networkChart', (Network) ->
           [party, articles] = d
           hullArea(hull(articles))
 
-        # maximum diameter
-        # console.log _.max _.map(pairwise(d3.geom.hull().x((node) -> node.x).y((node) -> node.y)(nodes)), (pair) -> [a,b] = pair; Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2))
+        # update voronoi patches
+        calculateVoronoiThrottled()
+        voronoiPatches.attr('d', (d) -> d3.svg.line()(d.voronoiArea))
+
+        updateScale()
