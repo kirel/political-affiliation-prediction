@@ -75,6 +75,8 @@ In python shell:
     get_news()
     pairwise_distance()
 
+Then copy a `distances-xxx.json` to `web/source/distances.json` and open the webserver.
+
 # Deployment
 
     docker build -t kirel/political-affiliation-prediction -t
