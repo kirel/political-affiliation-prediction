@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import cPickle
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d
-import urllib2
-from bs4 import BeautifulSoup
 import os
 from scipy.sparse import vstack
 from numpy.random import permutation
@@ -11,6 +9,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from time import sleep
+from vectorizer import Vectorizer
 
 class Classifier:
 
@@ -25,6 +24,8 @@ class Classifier:
 
         '''
         self.folder = folder
+        # load Bag-of-Word extractor
+        self.bow_vectorizer = Vectorizer(self.folder)
         # if there is no classifier file or training is invoked
         if (not os.path.isfile(self.folder+'/classifier.pickle')) or train:
             print 'Training classifier'
@@ -33,35 +34,6 @@ class Classifier:
         clfdict = cPickle.load(open(self.folder+'/classifier.pickle'))
         self.clf = clfdict['classifier']
         self.parties = clfdict['labels']
-        # load Bag-of-Word extractor
-        self.BoW = cPickle.load(open(self.folder+'/BoW_transformer.pickle'))
-
-    def predict_url(self, url, waittime=1):
-        '''
-        Calls 'predict' on the <p> elements of a webpage (presumably text) 
-
-        INPUT
-        url    a url (to e.g. a newspaper article page)
-        folder  the folder containing the classifier and BoW transformer pickles
-        
-        '''
-        text = ''
-        # load the website and parse the html
-        try:
-            text = urllib2.urlopen(url).read()
-        except:
-            print "Could not read %s, retrying in %fs"%(url,waittime)
-            try: 
-                sleep(waittime)
-                text = urllib2.urlopen(url).read()
-            except: 
-                print "Cound not read %s, aborting"
-        soup = BeautifulSoup(text)
-        # extract paragraphs and concatenate them together in one string
-        paragraphs = ' '.join(map((lambda x:x.getText()),soup.find_all('p')))
-        # call the classifier
-        return self.predict(paragraphs)
-
 
     def predict(self,text):
         '''
@@ -70,7 +42,7 @@ class Classifier:
 
         INPUT
         text    a string to assign to a party
-        folder  the folder containing the classifier and BoW transformer pickles
+        folder  the folder containing the classifier and bag-of-words transformer pickles
         
         '''
 
@@ -91,27 +63,25 @@ class Classifier:
     def bow(self,text):
         if type(text) is not list:
             text = [text]
-        x = self.BoW['count_vectorizer'].transform(text)
-        if self.BoW.has_key('tfidf_transformer'):
-            x = self.BoW['tfidf_transformer'].transform(x)
-        return x
+        return self.bow_vectorizer.transform(text)
    
-    def train(self,folds = 4):
+    def train(self,folds = 2):
         '''
         trains a classifier on the bag of word vectors extracted with extract_bundestag speeches.py
 
         INPUT
-        folder  the folder to store the model file and load the BoW file
+        folder  the folder to store the model file and load the bag-of-words-vectorizer file
         folds   number of cross-validation folds for optimizing the regularizer of the classifier
 
         '''
         try:
             # load the data
-            fn = self.folder+'/BoW.pickle'
+            fn = self.folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
             data = cPickle.load(open(fn))
         except:
-            error('Could not load Bag-0f-Words file in %s'%sfn + \
-                'Try executing [python downloader.py --download --parse --transform]')
+            print('Could not load Bag-0f-Words file in %s\n'%fn + \
+                  'Try executing [python downloader.py --download --parse --transform]')
+            raise
         # create numerical labels for each party
         Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
         # create the data matrix
@@ -125,9 +95,9 @@ class Classifier:
         # the classifier, accounting for unbalanced classes
         text_clf = LogisticRegression(class_weight='auto',dual=True)
         # the regularizer
-        parameters = {'C': (10.**arange(-5,5,.5)).tolist()}
+        parameters = {'C': (10.**arange(-5,5,1.)).tolist()}
         # perform gridsearch to get the best regularizer
-        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1)
+        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=folds)
         gs_clf.fit(X,Y)
         print metrics.classification_report(Y,gs_clf.predict(X),target_names=data.keys())
         # dump classifier to pickle

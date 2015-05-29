@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
@@ -27,6 +27,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
 
     '''
     import classifier
+    from api import fetch_url
     
     news = dict([(source,[]) for source in sources])  
     # the classifier for prediction of political affiliation
@@ -73,54 +74,72 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
          
         # predict party from url for this source
         print "Predicting %s"%source
-        news[source] = dict([(url,clf.predict_url(url)) for url in urls])
+        articles = []
+        for url in urls:
+            try:
+                title,text = fetch_url(url)
+                prediction = clf.predict(text)
+                prediction['url'] = url
+                articles.append((title,prediction))
+            except:
+                print('Could not get text from %s'%url)
+                pass
+
+        news[source] = dict(articles)
 
     # save results
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
-
-def cluster_news(folder='model', topics=100, topwords=100,modeltype='kpcakmeans'):
+def pairwise_distance(folder='model',nneighbors=5):
     '''
-    For better visualization, articles' BoW vectors are also clustered into topics
+
+    Computes pairwise distances between bag-of-words vectors of articles
 
     INPUT
-    folder      the model folder containing classifier and BoW transformer
-                if folder ends with .json it is assumed to be the news.json file
-    topics      number of topics for topic modelling (default 20)
-    topwords    number of words for representing a cluster center (default 100)
-    modeltype   type of algorithm for topic modeling, see Topicmodel class
+    folder      model folder
+    nneighbors  number of closest neighbors to include in distance list
+
     '''
-    import glob,topicmodel
+    import glob
+    from sklearn.metrics.pairwise import rbf_kernel
+    from sklearn.metrics.pairwise import pairwise_distances
+    from vectorizer import Vectorizer
     # take most recent news file in model folder
     news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
-    # a topic model 
-    tm = topicmodel.Topicmodel(folder=folder,modeltype=modeltype,\
-            topics=topics,topwords=topwords)
-    
     # collect text data from all articles
-    data = []
+    data,articles = [],[]
     for source in news.keys():
-        data.extend([article['text'] for article in news[source].values()])
+        for title,article in news[source].items():
+            data.append(article['text'])
+            predictions = [prediction['probability'] for prediction in article['prediction']]
+            articles.append(
+            {   'source':source,\
+                'title':title,\
+                'url':article['url'],\
+                'prediction':article['prediction'],\
+                'predictedLabel':article['prediction'][argmax(predictions)]['party']})
+    # a bag-of-words transformer 
+    bow = Vectorizer(folder=folder) 
+    X = bow.transform(data)
+    #
+    # use median for kernel width
+    perc = 100 - 100./len(article['prediction'])
+    medianDist = percentile(pairwise_distances(X,metric='l2').flatten(),perc)
+    # compute gauss kernel
+    K = rbf_kernel(X, gamma=medianDist) - eye(X.shape[0]) * (1+1e-5)
+    # collect closest neighbors
+    distances = []
+    for urlidx in range(len(data)):
+        idx =  (1./K[urlidx,:]).argsort()[1:nneighbors+1]
+        for sidx in idx:
+            distances.append([urlidx,sidx,1./K[urlidx,sidx]])
 
-    # train topic model on all data
-    print 'Training %s topic model on %d data points'%(modeltype,len(data))
-    tm.fit(data)
-   
-    articles = dict()
-    # Now that the clusters are fit, we assign articles to topics
-    for source in news.keys():
-        for article in news[source].keys():
-            # extract the topic assignment
-            ass = tm.predict(news[source][article]['text']) 
-            # store topic information associated with article
-            articles[article] = {'prediction':news[source][article]['prediction'],\
-                'topic':ass.flatten().tolist()[0]}
-
-    # save article with party prediction and cluster assignments
+    result = {'articles':articles,'distances':distances}
+    # save article with party prediction and distances to closest articles
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/articles-%s'%(datestr)+'.json', 'wb').write(json.dumps(articles))
-
+    open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
+    
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \
                 suffix='-data.txt'):
@@ -219,29 +238,12 @@ def txt2BoW(folder='model'):
     folder  the folder of the raw text pickle file from partyparse function
 
     '''
-    from itertools import chain
-    fn = folder+'/textdata/rawtext.pickle'
-    print 'Loading %s'%fn
-    data = cPickle.load(open(fn))
-    flat_speech = chain.from_iterable(data.values())
-    # the count vectorizer of scikit learn    
-    count_vect = CountVectorizer().fit(chain.from_iterable(data.values()))
-    print 'Learn BoW vocabulary'
-    tf_transformer = TfidfTransformer(use_idf=True).fit(count_vect.transform(chain.from_iterable(data.values())))
-    print 'Found %d words'%len(count_vect.vocabulary_)
-    for party in data.keys():
-        print 'Processing %s (%d speeches)'%(party,len(data[party]))
-        data[party] = tf_transformer.transform(count_vect.transform(data[party]))
-    fn = folder+'/BoW.pickle'
-    print 'Saving BoW to %s'%fn
-    # dump data to pickle
-    cPickle.dump(data,open(fn,'wb'),-1)
-    # dump vectorizer to pickle
-    fn = folder+'/BoW_transformer.pickle'
-    print 'Saving vectorizers to %s'%fn
-    vectorizers = {'count_vectorizer':count_vect,'tfidf_transformer':tf_transformer}
-    cPickle.dump(vectorizers,open(fn,'wb'),-1)
 
+    # train or load vectorizer
+    # training a new vectorizer will store the BoW'd data
+    from vectorizer import Vectorizer
+    vect = Vectorizer(folder=folder)
+   
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(\
@@ -264,7 +266,6 @@ if __name__ == "__main__":
             action='store_true', default=False)
     
     args = vars(parser.parse_args())
-    print args.keys() 
     if not os.path.isdir(args['folder']):
         os.mkdir(args['folder']) 
     if args['download']:

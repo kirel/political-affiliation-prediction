@@ -67,6 +67,14 @@ In python shell:
 
 Then check the notebooks i.e. [visualization.ipynb](visualization.ipynb)
 
+## Download Newspaper articles
+
+In python shell:
+
+    from downloader import get_news, pairwise_distance
+    get_news()
+    pairwise_distance()
+
 # Deployment
 
     docker build -t kirel/political-affiliation-prediction -t

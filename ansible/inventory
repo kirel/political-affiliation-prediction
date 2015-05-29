@@ -1,2 +1,2 @@
 [docker]
-128.199.33.92 ansible_ssh_user=root
+ec2-52-28-82-85.eu-central-1.compute.amazonaws.com ansible_ssh_user=ubuntu
