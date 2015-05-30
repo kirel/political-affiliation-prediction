@@ -97,7 +97,7 @@ app.directive 'networkChart', (Network) ->
       # hulls
       hulls = svg.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
       hull = d3.geom.hull().x((node) -> node.x).y((node) -> node.y)
-      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('basis-closed')
+      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('linear-closed')
       updateActive = ->
         node.sort((d, o) -> +d.active * 2 - 1) # map true, false to 1 and -1
         voronoiPatches.classed('active', (d) -> d.active)
