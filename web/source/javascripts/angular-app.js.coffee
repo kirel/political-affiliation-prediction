@@ -121,7 +121,18 @@ app.directive 'networkChart', (Network) ->
       voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes)
         .enter().append('a').attr('class', 'voronoi-patch').attr('xlink:href', (d) -> d.url).append('path')
       # voronoiPatches = node.append('path').attr('class', 'voronoi-patch')
-      voronoiPatches.on('mouseover', (d) -> d.active = true; console.log('active'); updateActive()).on('mouseout', (d) -> d.active = false; updateActive())
+      voronoiPatches
+        .on('mouseover', (d) ->
+          d.active = true
+          d.fixed = true
+          force.start()
+          updateActive()
+        )
+        .on('mouseout', (d) ->
+          d.active = false
+          d.fixed = false
+          updateActive()
+        )
 
       updateScale = ->
         diameter = _.max _.map(pairwise(d3.geom.hull().x((node) -> node.x).y((node) -> node.y)(nodes)), (pair) ->
