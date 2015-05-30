@@ -45,17 +45,24 @@ network-chart
     .slice
       transition: all .4s cubic-bezier(0, 1.8, 1, 1.8)
       transform: scale(1)
-    text
+    .title
       transition: opacity .5s
       opacity: 0
-      font: 14px sans-serif
       pointer-events: none
+      text
+        font: 14px sans-serif
+        &.faux-shadow
+          fill: $selection-color
+      rect.text-background
+        fill: transparent
+        stroke: transparent
+        stroke-width: 10px
+        stroke-linejoin: round
     &.active
       .selectionIndicator
         opacity: 1
-        transform: scale(1)
+        transform: scale(1.5)
       .slice
-        transform: scale(2)
-      text
+        transform: scale(3)
+      .title
         opacity: 1
-        pointer-events: all

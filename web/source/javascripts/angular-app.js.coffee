@@ -106,9 +106,22 @@ app.directive 'networkChart', (Network) ->
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
       node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
-      node
-        .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
-          d.title
+      titles = node.append('g').attr('class', 'title')
+      titles
+        .append('text') # faux shadow text
+          .attr('class', 'faux-shadow')
+          .attr('dx', 1).attr('dy', outerRadius*1.5+1)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'hanging')
+          .text((d) -> d.title)
+      titles
+        .append('text') # real text
+          .attr('dx', 0).attr('dy', outerRadius*1.5)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'hanging')
+          .text((d) -> d.title)
+      titles
+        .insert('rect', 'text').attr('class', 'text-background').each((d) -> d3.select(@).attr(@parentNode.getBBox()))
       arcs = node.each (article) ->
         slices = d3.select(@).selectAll('.slice').data(pie(article.prediction))
         slices.enter().append('g')
