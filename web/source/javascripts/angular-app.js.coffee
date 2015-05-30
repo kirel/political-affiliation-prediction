@@ -99,8 +99,9 @@ app.directive 'networkChart', (Network) ->
       hull = d3.geom.hull().x((node) -> node.x).y((node) -> node.y)
       hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('basis-closed')
       updateActive = ->
-        node.classed('active', (d) -> d.active)
+        node.sort((d, o) -> +d.active * 2 - 1) # map true, false to 1 and -1
         voronoiPatches.classed('active', (d) -> d.active)
+        _.delay -> node.classed('active', (d) -> d.active) # delay to ensure css animations still work
 
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
