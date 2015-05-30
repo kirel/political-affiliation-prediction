@@ -128,10 +128,13 @@ app.directive 'networkChart', (Network) ->
           [a,b] = pair
           Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)
         )
-        growthRate = 0.05
-        fitScale = fitScale * (1+growthRate) if diameter < minSide * 0.8
-        fitScale = fitScale / (1+growthRate) if diameter > minSide * 0.8 * (1+growthRate)
-        force.linkDistance((l) -> l.distance*fitScale).start()
+        target = minSide * 0.8
+        diff = target - diameter
+        rate = 0.1
+        tolerance = 0.05
+        if Math.abs(diff) > target*tolerance
+          fitScale = fitScale + rate*Math.tanh(diff) 
+          force.linkDistance((l) -> l.distance*fitScale).start()
 
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
