@@ -69,13 +69,11 @@ Then check the notebooks i.e. [visualization.ipynb](visualization.ipynb)
 
 ## Download Newspaper articles
 
-In python shell:
+Downloads news articles on politics landing page of various german newspapers and computed pairwise distances between them
 
-    from downloader import get_news, pairwise_distance
-    get_news()
-    pairwise_distance()
+   python downloader.py --download --pairwise
 
-Then copy a `distances-xxx.json` to `web/source/distances.json` and open the webserver.
+The results are stored in a `distances-xxx.json` file, but also in `web/source/distances.json`.
 
 # Deployment
 
