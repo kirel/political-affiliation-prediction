@@ -7,7 +7,7 @@ import urllib2
 import cPickle
 from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import glob
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 from scipy.sparse import vstack
@@ -91,7 +91,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
-def pairwise_distance(folder='model',nneighbors=5):
+def pairwise_distance(folder='model',nneighbors=1):
     '''
 
     Computes pairwise distances between bag-of-words vectors of articles
@@ -102,7 +102,6 @@ def pairwise_distance(folder='model',nneighbors=5):
 
     '''
     import glob
-    from sklearn.metrics.pairwise import rbf_kernel
     from sklearn.metrics.pairwise import pairwise_distances
     from vectorizer import Vectorizer
     # take most recent news file in model folder
@@ -120,25 +119,28 @@ def pairwise_distance(folder='model',nneighbors=5):
                 'prediction':article['prediction'],\
                 'predictedLabel':article['prediction'][argmax(predictions)]['party']})
     # a bag-of-words transformer 
-    bow = Vectorizer(folder=folder) 
-    X = bow.transform(data)
-    #
-    # use median for kernel width
-    perc = 100 - 100./len(article['prediction'])
-    medianDist = percentile(pairwise_distances(X,metric='l2').flatten(),perc)
-    # compute gauss kernel
-    K = rbf_kernel(X, gamma=medianDist) - eye(X.shape[0]) * (1+1e-5)
+    
+    # worked a bit on more stopwords - mainly filtering out html related noise
+    stops = map(lambda x:x.lower().strip(),open(folder+'/stopwords.txt').readlines()[6:])
+
+    # using now stopwords and filtering out digits
+    bow = TfidfVectorizer(min_df=2,stop_words=stops)
+    X = bow.fit_transform(data)
+    print 'Computing pairwise distances' 
+    K = pairwise_distances(X,metric='l2',n_jobs=-1)
     # collect closest neighbors
     distances = []
     for urlidx in range(len(data)):
-        idx =  (1./K[urlidx,:]).argsort()[1:nneighbors+1]
+        idx =  (K[urlidx,:]).argsort()[1:nneighbors+1]
         for sidx in idx:
-            distances.append([urlidx,sidx,1./K[urlidx,sidx]])
+            distances.append([urlidx,sidx,K[urlidx,sidx]])
 
     result = {'articles':articles,'distances':distances}
     # save article with party prediction and distances to closest articles
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
+    # also save that latest version for the visualization
+    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(result))
     
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \

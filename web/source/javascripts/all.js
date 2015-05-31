@@ -1,5 +1,4 @@
 //= require lodash
-//= require jQuery
 //= require d3
 //= require angular
 //= require_tree .
