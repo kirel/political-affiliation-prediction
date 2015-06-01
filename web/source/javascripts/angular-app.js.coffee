@@ -82,6 +82,8 @@ app.directive 'networkChart', (Network) ->
         .outerRadius(outerRadius)
       force
         .linkDistance((l) -> l.distance)
+        .charge((n) -> if n.active then -600 else -30) # fush nodes away from selected node
+        # TODO try friction based on mouse distance
         .nodes(nodes)
         .links(links)
         .start()
@@ -95,17 +97,31 @@ app.directive 'networkChart', (Network) ->
       # hulls
       hulls = svg.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
       hull = d3.geom.hull().x((node) -> node.x).y((node) -> node.y)
-      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('basis-closed')
+      hullArea = d3.svg.line().x((n) -> n.x).y((n) -> n.y).interpolate('linear-closed')
       updateActive = ->
-        node.classed('active', (d) -> d.active)
+        node.sort((d, o) -> +d.active * 2 - 1) # map true, false to 1 and -1
         voronoiPatches.classed('active', (d) -> d.active)
+        _.delay -> node.classed('active', (d) -> d.active) # delay to ensure css animations still work
 
       # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
       node = svg.selectAll('.node').data(nodes).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
       node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
-      node
-        .append('text').attr('dx', 0).attr('dy', innerRadius).attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging').text (d) ->
-          d.title
+      titles = node.append('g').attr('class', 'title')
+      titles
+        .append('text') # faux shadow text
+          .attr('class', 'faux-shadow')
+          .attr('dx', 1).attr('dy', outerRadius*1.5+1)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'hanging')
+          .text((d) -> d.title)
+      titles
+        .append('text') # real text
+          .attr('dx', 0).attr('dy', outerRadius*1.5)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'hanging')
+          .text((d) -> d.title)
+      titles
+        .insert('rect', 'text').attr('class', 'text-background').each((d) -> d3.select(@).attr(@parentNode.getBBox()))
       arcs = node.each (article) ->
         slices = d3.select(@).selectAll('.slice').data(pie(article.prediction))
         slices.enter().append('g')
@@ -119,17 +135,31 @@ app.directive 'networkChart', (Network) ->
       voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes)
         .enter().append('a').attr('class', 'voronoi-patch').attr('xlink:href', (d) -> d.url).append('path')
       # voronoiPatches = node.append('path').attr('class', 'voronoi-patch')
-      voronoiPatches.on('mouseover', (d) -> d.active = true; console.log('active'); updateActive()).on('mouseout', (d) -> d.active = false; updateActive())
+      voronoiPatches
+        .on('mouseover', (d) ->
+          d.active = true
+          d.fixed = true
+          force.start()
+          updateActive()
+        )
+        .on('mouseout', (d) ->
+          d.active = false
+          d.fixed = false
+          updateActive()
+        )
 
       updateScale = ->
         diameter = _.max _.map(pairwise(d3.geom.hull().x((node) -> node.x).y((node) -> node.y)(nodes)), (pair) ->
           [a,b] = pair
           Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)
         )
-        growthRate = 0.05
-        fitScale = fitScale * (1+growthRate) if diameter < minSide * 0.8
-        fitScale = fitScale / (1+growthRate) if diameter > minSide * 0.8 * (1+growthRate)
-        force.linkDistance((l) -> l.distance*fitScale).start()
+        target = minSide * 0.8
+        diff = target - diameter
+        rate = 0.1
+        tolerance = 0.05
+        if Math.abs(diff) > target*tolerance
+          fitScale = fitScale + rate*Math.tanh(diff)
+          force.linkDistance((l) -> l.distance*fitScale).start()
 
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
