@@ -148,19 +148,6 @@ app.directive 'networkChart', (Network) ->
           updateActive()
         )
 
-      updateScale = ->
-        diameter = _.max _.map(pairwise(d3.geom.hull().x((node) -> node.x).y((node) -> node.y)(nodes)), (pair) ->
-          [a,b] = pair
-          Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)
-        )
-        target = minSide * 0.8
-        diff = target - diameter
-        rate = 0.1
-        tolerance = 0.05
-        if Math.abs(diff) > target*tolerance
-          fitScale = fitScale + rate*Math.tanh(diff)
-          force.linkDistance((l) -> l.distance*fitScale).start()
-
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
       force.on 'tick', ->
@@ -182,5 +169,3 @@ app.directive 'networkChart', (Network) ->
         # update voronoi patches
         calculateVoronoiThrottled()
         voronoiPatches.attr('d', (d) -> d3.svg.line()(d.voronoiArea))
-
-        updateScale()
