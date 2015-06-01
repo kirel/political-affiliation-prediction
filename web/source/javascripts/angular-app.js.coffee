@@ -158,7 +158,7 @@ app.directive 'networkChart', (Network) ->
         rate = 0.1
         tolerance = 0.05
         if Math.abs(diff) > target*tolerance
-          fitScale = fitScale + rate*Math.tanh(diff) 
+          fitScale = fitScale + rate*Math.tanh(diff)
           force.linkDistance((l) -> l.distance*fitScale).start()
 
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
