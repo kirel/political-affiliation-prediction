@@ -82,7 +82,7 @@ app.directive 'networkChart', (Network) ->
         .outerRadius(outerRadius)
       force
         .linkDistance((l) -> l.distance)
-        .charge((n) -> if n.active then -600 else -30) # fush nodes away from selected node
+        .charge((n) -> if n.active then -150 else -30) # fush nodes away from selected node
         # TODO try friction based on mouse distance
         .nodes(nodes)
         .links(links)
