@@ -7,6 +7,22 @@ pairwise = (list) ->
   pairs = _.map rest, (x) -> [first, x]
   pairs.concat pairwise(rest)
 
+vAdd = (vs...) -> _.reduce( vs, (v, w) -> _.zipWith(v, w, _.add))
+vSub = (v, w) -> vAdd(v, vScale(-1.0, w))
+vScale = (scalar, v) -> _.map(v, (e) -> e*scalar)
+vDot = (v, w) -> _.sum(_.zipWith(v, w, (a, b) -> a*b))
+vNorm = (v) -> Math.sqrt(_.reduce(_.map(v, (e) -> e**2), _.add))
+euclideanDistance = (v, w) -> vNorm(vSub(v, w))
+d = euclideanDistance
+
+gaussian = (mean = 0, sigma = 1) -> (x) ->
+  gaussianConstant = 1 / Math.sqrt(2 * Math.PI)
+  x = (x - mean) / sigma
+  gaussianConstant * Math.exp(-.5 * x * x) / sigma
+
+sgn = Math.sign
+sigmoid = (x) -> 1/(1 + Math.E**(-x))
+
 window.article = do ->
   i = 1
   ->
