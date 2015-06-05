@@ -91,7 +91,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
-def pairwise_distance(folder='model',nneighbors=1):
+def pairwise_distance(folder='model',nneighbors=100):
     '''
 
     Computes pairwise distances between bag-of-words vectors of articles
