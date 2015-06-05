@@ -13,7 +13,12 @@ vScale = (scalar, v) -> _.map(v, (e) -> e*scalar)
 vDot = (v, w) -> _.sum(_.zipWith(v, w, (a, b) -> a*b))
 vNorm = (v) -> Math.sqrt(_.reduce(_.map(v, (e) -> e**2), _.add))
 euclideanDistance = (v, w) -> vNorm(vSub(v, w))
-d = euclideanDistance
+
+angle = (doc, other) ->
+  diff = vSub([doc.x, doc.y], [other.x, other.y])
+  unitDiff = vScale(1/vNorm(diff), diff)
+  alpha = Math.acos(vDot([0, 1], unitDiff)) / Math.PI * 180
+  alpha = if diff[0] <= 0 then alpha else 360 - alpha
 
 gaussian = (mean = 0, sigma = 1) -> (x) ->
   gaussianConstant = 1 / Math.sqrt(2 * Math.PI)
@@ -175,12 +180,6 @@ app.directive 'networkChart', (Network) ->
           duration = 500
           n = nodes.length
 
-          angle = (doc, other) ->
-            diff = vSub([doc.x, doc.y], [other.x, other.y])
-            unitDiff = vScale(1/vNorm(diff), diff)
-            alpha = Math.acos(vDot([0, 1], unitDiff)) / Math.PI * 180
-            alpha = if diff[0] <= 0 then alpha else 360 - alpha
-
           node
             .sort((doc, other) ->
               # sort by distance to selected
@@ -191,8 +190,6 @@ app.directive 'networkChart', (Network) ->
               .delay((doc, i) -> # calculate angle to basis vector
                 return 0 if doc == d
                 dist = euclideanDistance([xScale(d.x), yScale(d.y)], [xScale(doc.x), yScale(doc.y)])
-                # distDelay = d3.scale.linear().domain([0, minSide]).range([0, duration])(dist)
-                console.log dist, gaussian(outerRadius*3, 2)(dist)*1000
                 gaussian(outerRadius*3, 2)(dist)*1000 # works pretty well... FIXME to many magic numbers
               )
               .attr 'transform', (d) ->
