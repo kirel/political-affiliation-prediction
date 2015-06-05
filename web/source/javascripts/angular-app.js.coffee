@@ -171,7 +171,7 @@ app.directive 'networkChart', (Network) ->
             pos = [xScale(other.x), yScale(other.y)]
             diff = vSub(pos, selectedPos)
             dist = vNorm(diff)
-            theShift = outerRadius*shift(outerRadius/2)(dist/outerRadius)
+            theShift = 2*outerRadius*shift(outerRadius/2)(dist/outerRadius)
             _.object ['x','y'], vAdd(pos, vScale(theShift/dist, diff))
 
           xScaleD = (d) -> scaleD(d).x
