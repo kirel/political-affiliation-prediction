@@ -228,8 +228,12 @@ app.directive 'networkChart', (Network) ->
 
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
+      ticks = 0
+      preTicks = 250
       force.on 'tick', ->
         console.log 'tick'
+        ticks += 1
+        return if ticks < preTicks
         # smooth the layout change with inertia
         rate = 0.8
         smooth = (previous, next) -> (1 - rate) * previous + rate * next
@@ -246,3 +250,4 @@ app.directive 'networkChart', (Network) ->
         # update voronoi patches
         calculateVoronoiThrottled()
         voronoiPatches.attr('d', (d) -> d3.svg.line()(d.voronoiArea))
+      force.tick() while force.alpha() > 0.05 or ticks < preTicks
