@@ -49,6 +49,7 @@ app.controller 'Main', ($scope) ->
   $scope.controls =
     showGroups: true
     showLinks: true
+    linkPercentage: 0.05
 
 app.factory 'Network', ($q, $http) ->
   $http.get('distances.json').then (response) -> response.data
@@ -57,6 +58,7 @@ app.directive 'networkChart', (Network) ->
   scope:
     showLinks: '='
     showGroups: '='
+    linkPercentage: '='
   link: (scope, elem, attrs) ->
     # preparing
     width = 800
@@ -87,14 +89,14 @@ app.directive 'networkChart', (Network) ->
       console.log(network)
       nodes = network.articles
       byParty = _.groupBy nodes, 'predictedLabel'
-      links = for entry in network.distances
+      allLinks = for entry in network.distances
         source: entry[0]
         target: entry[1]
         distance: entry[2]
         key: [entry[0],entry[1]]
-      [minDist, maxDist] = d3.extent(links, (l) -> l.distance)
+      [minDist, maxDist] = d3.extent(allLinks, (l) -> l.distance)
       linkPercentage = .05
-      links = _.filter(links, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
+      links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
       fitScale = 1
       num = nodes.length
       circleSize = 20/Math.log2(nodes.length)
@@ -145,7 +147,7 @@ app.directive 'networkChart', (Network) ->
         _.delay (-> node.classed('active', (d) -> d.active)) # delay to ensure css animations still work
 
       linkGroup = svg.append('g').attr('class', 'link-group')
-      link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
+      link = linkGroup.selectAll('.link').data(links, (d) -> d.key)
       link.enter().append('line').attr('class', 'link')
 
       updateLinks = (link) ->
@@ -170,6 +172,22 @@ app.directive 'networkChart', (Network) ->
           link.attr('opacity', 0)
 
       scope.$watch 'showLinks', -> updateLinks(link)
+
+      scope.$watch 'linkPercentage', (linkPercentage) ->
+        linkPercentage = parseFloat(linkPercentage)
+        return unless linkPercentage
+        dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range([1,0])
+        dScaleColor = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range(['firebrick','black'])
+        links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
+        link = link.data(links, (d) -> d.key)
+        console.log links: links.length, data: link.data()
+        console.log exit: link.exit().size()
+        link.exit().remove()
+        console.log enter: link.enter().size()
+        link.enter().append('line').attr('class', 'link')
+        force.links(links)
+        force.start()
+        updateLinks(link)
 
       node = svg.selectAll('.node').data(nodes, (a) -> a.url).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
       node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
@@ -271,4 +289,5 @@ app.directive 'networkChart', (Network) ->
         # update voronoi patches
         calculateVoronoiThrottled()
         voronoiPatches.attr('d', (d) -> d3.svg.line()(d.voronoiArea))
-      force.tick() while force.alpha() > 0.05 or ticks < preTicks
+      scope.$evalAsync ->
+        force.tick() while force.alpha() > 0.05 or ticks < preTicks
