@@ -45,12 +45,18 @@ window.article = do ->
     prediction: prediction
     predictedLabel: predictedLabel
 
+app.controller 'Main', ($scope) ->
+  $scope.controls =
+    showGroups: true
+    showLinks: true
+
 app.factory 'Network', ($q, $http) ->
   $http.get('distances.json').then (response) -> response.data
 
 app.directive 'networkChart', (Network) ->
   scope:
     showLinks: '='
+    showGroups: '='
   link: (scope, elem, attrs) ->
     # preparing
     width = 800
@@ -106,6 +112,7 @@ app.directive 'networkChart', (Network) ->
       xScale.domain(d3.extent(nodes, (n) -> n.x))
       yScale.domain(d3.extent(nodes, (n) -> n.y))
       dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range([1,0])
+      dScaleColor = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range(['firebrick','black'])
 
       # voronoi
       voronoi = d3.geom.voronoi().x(xScaleD).y(yScaleD)
@@ -114,9 +121,24 @@ app.directive 'networkChart', (Network) ->
       calculateVoronoi()
 
       # hulls
-      hulls = svg.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
+      hullsGroup = svg.append('g').attr('class', 'hulls')
+      hulls = hullsGroup.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
       hull = d3.geom.hull().x(xScaleD).y(yScaleD)
       hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
+
+      updateHulls = (hulls) ->
+        if scope.showGroups
+          hullsGroup.attr "opacity", 1
+          hulls
+            .attr "d", (d) ->
+              [party, articles] = d
+              hullArea(hull(articles))
+        else
+          console.log 'here'
+          hullsGroup.attr "opacity", 0
+
+      scope.$watch 'showGroups', -> updateHulls(hulls)
+
       updateActive = ->
         # node.sort((d, o) -> +d.active * 2 - 1) # map true, false to 1 and -1
         voronoiPatches.classed('active', (d) -> d.active)
@@ -129,7 +151,12 @@ app.directive 'networkChart', (Network) ->
       updateLinks = (link) ->
         if scope.showLinks
           link
-            .attr('opacity', 1)
+            .attr('opacity', (d) -> dScale(d.distance))
+            .attr('stroke', (d) ->
+              dScaleColor(d.distance)
+            ).attr('stroke-width', (d) ->
+              dScale(d.distance)*2
+            )
             .attr('x1', (d) ->
               xScaleD d.source
             ).attr('y1', (d) ->
@@ -138,10 +165,6 @@ app.directive 'networkChart', (Network) ->
               xScaleD d.target
             ).attr('y2', (d) ->
               yScaleD d.target
-            ).attr('stroke', (d) ->
-              "rgba(255,255,255,#{dScale(d.distance)}"
-            ).attr('stroke-width', (d) ->
-              dScale(d.distance)*1.5
             )
         else
           link.attr('opacity', 0)
@@ -243,9 +266,7 @@ app.directive 'networkChart', (Network) ->
         updateLinks(link)
         updateNodes(node)
 
-        hulls.attr "d", (d) ->
-          [party, articles] = d
-          hullArea(hull(articles))
+        updateHulls(hulls)
 
         # update voronoi patches
         calculateVoronoiThrottled()

@@ -1,7 +1,7 @@
 ---
 title: Partypredictor
 ---
-.container(ng-app='pp')
+.container(ng-app='pp' ng-controller='Main')
   .row
     .col-md-12{:role => "main"}
       %h1.page-header Partypredictor*
@@ -31,10 +31,13 @@ title: Partypredictor
 
     #network-controls
       %label(for='show-links')
-        %input#show-links(type='checkbox' ng-model='showLinks')
+        %input#show-links(type='checkbox' ng-model='controls.showLinks')
         Abstände visualisieren
+      %label(for='show-groups')
+        %input#show-groups(type='checkbox' ng-model='controls.showGroups')
+        Gruppen visualisieren
     #network
-      %network-chart(show-links='showLinks')
+      %network-chart(show-links='controls.showLinks' show-groups='controls.showGroups')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $
