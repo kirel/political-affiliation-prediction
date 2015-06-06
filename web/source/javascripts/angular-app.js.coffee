@@ -49,6 +49,8 @@ app.factory 'Network', ($q, $http) ->
   $http.get('distances.json').then (response) -> response.data
 
 app.directive 'networkChart', (Network) ->
+  scope:
+    showLinks: '='
   link: (scope, elem, attrs) ->
     # preparing
     width = 800
@@ -83,6 +85,7 @@ app.directive 'networkChart', (Network) ->
         source: entry[0]
         target: entry[1]
         distance: entry[2]
+        key: [entry[0],entry[1]]
       [minDist, maxDist] = d3.extent(links, (l) -> l.distance)
       linkPercentage = .05
       links = _.filter(links, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
@@ -119,21 +122,31 @@ app.directive 'networkChart', (Network) ->
         voronoiPatches.classed('active', (d) -> d.active)
         _.delay (-> node.classed('active', (d) -> d.active)) # delay to ensure css animations still work
 
-      link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
+      linkGroup = svg.append('g').attr('class', 'link-group')
+      link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
+      link.enter().append('line').attr('class', 'link')
+
       updateLinks = (link) ->
-        link.attr('x1', (d) ->
-          xScaleD d.source
-        ).attr('y1', (d) ->
-          yScaleD d.source
-        ).attr('x2', (d) ->
-          xScaleD d.target
-        ).attr('y2', (d) ->
-          yScaleD d.target
-        ).attr('stroke', (d) ->
-          "rgba(255,255,255,#{dScale(d.distance)}"
-        ).attr('stroke-width', (d) ->
-          dScale(d.distance)*1.5
-        )
+        if scope.showLinks
+          link
+            .attr('opacity', 1)
+            .attr('x1', (d) ->
+              xScaleD d.source
+            ).attr('y1', (d) ->
+              yScaleD d.source
+            ).attr('x2', (d) ->
+              xScaleD d.target
+            ).attr('y2', (d) ->
+              yScaleD d.target
+            ).attr('stroke', (d) ->
+              "rgba(255,255,255,#{dScale(d.distance)}"
+            ).attr('stroke-width', (d) ->
+              dScale(d.distance)*1.5
+            )
+        else
+          link.attr('opacity', 0)
+
+      scope.$watch 'showLinks', -> updateLinks(link)
 
       node = svg.selectAll('.node').data(nodes, (a) -> a.url).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
       node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
