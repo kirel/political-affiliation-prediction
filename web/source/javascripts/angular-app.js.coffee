@@ -45,21 +45,7 @@ window.article = do ->
     prediction: prediction
     predictedLabel: predictedLabel
 
-
-NUM = 100
-
 app.factory 'Network', ($q, $http) ->
-  # articles = _.times(NUM, article)
-  # indexes = [0...articles.length]
-  # distances = _.map pairwise(indexes), (pair) ->
-  #   # using manhattan distance for speed
-  #   vecs = _.map pair, (index) -> _.map(articles[index].prediction, 'probability')
-  #   pair.concat [_.sum(_.zipWith(vecs..., (a, b) -> Math.abs(a-b)))]
-  #
-  # $q.when
-  #   articles: articles
-  #   distances: distances
-
   $http.get('distances.json').then (response) -> response.data
 
 app.directive 'networkChart', (Network) ->
@@ -97,7 +83,9 @@ app.directive 'networkChart', (Network) ->
         source: entry[0]
         target: entry[1]
         distance: entry[2]
-      maxDistance = _.max(links, 'distance').distance
+      [minDist, maxDist] = d3.extent(links, (l) -> l.distance)
+      linkPercentage = .05
+      links = _.filter(links, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
       fitScale = 1
       num = nodes.length
       circleSize = 20/Math.log2(nodes.length)
@@ -114,6 +102,7 @@ app.directive 'networkChart', (Network) ->
 
       xScale.domain(d3.extent(nodes, (n) -> n.x))
       yScale.domain(d3.extent(nodes, (n) -> n.y))
+      dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range([1,0])
 
       # voronoi
       voronoi = d3.geom.voronoi().x(xScaleD).y(yScaleD)
@@ -124,13 +113,28 @@ app.directive 'networkChart', (Network) ->
       # hulls
       hulls = svg.selectAll('.hull').data(_.pairs(byParty)).enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
       hull = d3.geom.hull().x(xScaleD).y(yScaleD)
-      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('linear-closed')
+      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
       updateActive = ->
         # node.sort((d, o) -> +d.active * 2 - 1) # map true, false to 1 and -1
         voronoiPatches.classed('active', (d) -> d.active)
-        _.delay -> node.classed('active', (d) -> d.active) # delay to ensure css animations still work
+        _.delay (-> node.classed('active', (d) -> d.active)) # delay to ensure css animations still work
 
-      # link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
+      link = svg.selectAll('.link').data(links).enter().append('line').attr('class', 'link')
+      updateLinks = (link) ->
+        link.attr('x1', (d) ->
+          xScaleD d.source
+        ).attr('y1', (d) ->
+          yScaleD d.source
+        ).attr('x2', (d) ->
+          xScaleD d.target
+        ).attr('y2', (d) ->
+          yScaleD d.target
+        ).attr('stroke', (d) ->
+          "rgba(255,255,255,#{dScale(d.distance)}"
+        ).attr('stroke-width', (d) ->
+          dScale(d.distance)*1.5
+        )
+
       node = svg.selectAll('.node').data(nodes, (a) -> a.url).enter().append('g').attr('class', (d) -> 'node ' + d.predictedLabel).call(force.drag)
       node.append('circle').attr('class', 'selectionIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize * 4)
       titles = node.append('g').attr('class', 'title')
@@ -158,6 +162,10 @@ app.directive 'networkChart', (Network) ->
 
       node.append('circle').attr('class', 'partyIndicator').attr('cx', 0).attr('cy', 0).attr('r', circleSize)
 
+      updateNodes = (node) ->
+        node.attr 'transform', (d) ->
+          'translate(' + xScaleD(d) + ',' + yScaleD(d) + ')'
+
       # voronoi selectors
       voronoiPatches = svg.selectAll('.voronoi-patch').data(nodes)
         .enter().append('a').attr('class', 'voronoi-patch').attr('xlink:href', (d) -> d.url).append('path')
@@ -178,24 +186,18 @@ app.directive 'networkChart', (Network) ->
           yScaleD = (d) -> scaleD(d).y
 
           duration = 500
-          n = nodes.length
 
-          node
-            .sort((doc, other) ->
-              # sort by distance to selected
-              d3.descending(euclideanDistance([d.x, d.y], [doc.x, doc.y]), euclideanDistance([d.x, d.y], [other.x, other.y])))
-            .transition()
-              .duration((doc, i) ->
-                duration)
-              .delay((doc, i) -> # calculate angle to basis vector
-                return 0 if doc == d
-                dist = euclideanDistance([xScale(d.x), yScale(d.y)], [xScale(doc.x), yScale(doc.y)])
-                gaussian(outerRadius*3, 2)(dist)*1000 # works pretty well... FIXME to many magic numbers
-              )
-              .attr 'transform', (d) ->
-                'translate(' + xScaleD(d) + ',' + yScaleD(d) + ')'
+          updateNodes(
+            node
+              .sort((doc, other) ->
+                # sort by distance to selected
+                d3.descending(euclideanDistance([d.x, d.y], [doc.x, doc.y]), euclideanDistance([d.x, d.y], [other.x, other.y])))
+              .transition()
+                .duration(duration)
+          )
 
-          # force.start()
+          updateLinks(link.transition().duration(duration))
+
           updateActive()
         )
         .on('mouseout', (d) ->
@@ -221,17 +223,8 @@ app.directive 'networkChart', (Network) ->
         xScale.domain(_.zipWith(xScale.domain(), d3.extent(nodes, (n) -> n.x), smooth))
         yScale.domain(_.zipWith(yScale.domain(), d3.extent(nodes, (n) -> n.y), smooth))
 
-        # link.attr('x1', (d) ->
-        #   xScale d.source.x
-        # ).attr('y1', (d) ->
-        #   yScale d.source.y
-        # ).attr('x2', (d) ->
-        #   xScale d.target.x
-        # ).attr 'y2', (d) ->
-        #   yScale d.target.y
-
-        node.attr 'transform', (d) ->
-          'translate(' + xScaleD(d) + ',' + yScaleD(d) + ')'
+        updateLinks(link)
+        updateNodes(node)
 
         hulls.attr "d", (d) ->
           [party, articles] = d
