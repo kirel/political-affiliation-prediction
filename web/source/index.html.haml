@@ -29,8 +29,12 @@ title: Partypredictor
       = succeed "." do
         %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
+    #network-controls
+      %label(for='show-links')
+        %input#show-links(type='checkbox' ng-model='showLinks')
+        Abstände visualisieren
     #network
-      %network-chart
+      %network-chart(show-links='showLinks')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $
