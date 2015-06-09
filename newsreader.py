@@ -91,6 +91,25 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
+def all_saved_news(folder='model'):
+    import glob
+    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
+    # collect text data from all articles
+    articles, data = [], []
+    for source in news.keys():
+        for title, article in news[source].items():
+            data.append(article['text'])
+            predictions = [prediction['probability'] for prediction in article['prediction']]
+            articles.append({
+                'source':source,
+                'title':title,
+                'url':article['url'],
+                'prediction':article['prediction'],
+                'predictedLabel':article['prediction'][argmax(predictions)]['party']
+            })
+    return articles, data
+
+
 def pairwise_distance(folder='model',nneighbors=100):
     '''
 
@@ -101,24 +120,11 @@ def pairwise_distance(folder='model',nneighbors=100):
     nneighbors  number of closest neighbors to include in distance list
 
     '''
-    import glob
     from sklearn.metrics.pairwise import pairwise_distances
     from vectorizer import Vectorizer
     # take most recent news file in model folder
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
+    articles, data = all_saved_news()
     # collect text data from all articles
-    data,articles = [],[]
-    for source in news.keys():
-        for title,article in news[source].items():
-            data.append(article['text'])
-            predictions = [prediction['probability'] for prediction in article['prediction']]
-            articles.append(
-            {   'source':source,\
-                'title':title,\
-                'url':article['url'],\
-                'prediction':article['prediction'],\
-                'predictedLabel':article['prediction'][argmax(predictions)]['party']})
-    # a bag-of-words transformer 
     
     # worked a bit on more stopwords - mainly filtering out html related noise
     stops = map(lambda x:x.lower().strip(),open(folder+'/stopwords.txt').readlines()[6:])
@@ -153,27 +159,13 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     nclusters   number of clusters
 
     '''
-    import glob
     from sklearn.metrics.pairwise import pairwise_distances
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.decomposition import KernelPCA
     from sklearn.cluster import KMeans
     from scipy.stats.mstats import zscore
-    # take most recent news file in model folder
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
-    # collect text data from all articles
-    data,articles = [],[]
-    for source in news.keys():
-        for title,article in news[source].items():
-            data.append(article['text'])
-            predictions = [prediction['probability'] for prediction in article['prediction']]
-            articles.append(
-            {   'source':source,\
-                'title':title,\
-                'url':article['url'],\
-                'prediction':article['prediction'],\
-                'predictedLabel':article['prediction'][argmax(predictions)]['party']})
-    # a bag-of-words transformer 
+
+    articles, data = all_saved_news()
 
     # worked a bit on more stopwords - mainly filtering out html related noise
     stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
@@ -188,7 +180,7 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     # using now stopwords and filtering out digits
     print 'Computing pairwise distances' 
     K = pairwise_distances(X,metric='l2',n_jobs=-1)
-    perc = 100./len(news)
+    perc = 100./len(articles)
     width = percentile(K.flatten(),perc)
     
     # KPCA transform bow vectors
@@ -202,7 +194,7 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     distances = []
     for icluster in range(nclusters):
         nmembers = (Xc==icluster).sum()
-        if nmembers < len(news)*2.0 and nmembers > 1:
+        if nmembers < len(articles)*2.0 and nmembers > 1:
             members = (Xc==icluster).nonzero()[0]
             topwordidx = array(X[members,:].sum(axis=0))[0].argsort()[-topwhat:][::-1]
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
