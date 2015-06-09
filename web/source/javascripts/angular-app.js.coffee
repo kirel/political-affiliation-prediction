@@ -176,14 +176,12 @@ app.directive 'networkChart', (Network) ->
       scope.$watch 'linkPercentage', (linkPercentage) ->
         linkPercentage = parseFloat(linkPercentage)
         return unless linkPercentage
+
         dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range([1,0])
         dScaleColor = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range(['firebrick','black'])
         links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
         link = link.data(links, (d) -> d.key)
-        console.log links: links.length, data: link.data()
-        console.log exit: link.exit().size()
         link.exit().remove()
-        console.log enter: link.enter().size()
         link.enter().append('line').attr('class', 'link')
         force.links(links)
         force.start()
