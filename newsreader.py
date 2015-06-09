@@ -217,13 +217,13 @@ def write_distances_json(folder='model'):
 
     distances_json = {
             'articles': articles,
-            'distances': {
-                'l2': l2(data)
-            },
-            'clusterings': {
-                'prediction': party_cluster(articles),
-                'kpca_30': kpca_cluster(data)
-            }
+            'distances': [
+                { 'name': 'l2', 'distances': l2(data) }
+            ],
+            'clusterings': [
+                { 'name': 'prediction', 'clusters': party_cluster(articles) },
+                { 'name': 'kpca_30', 'clusters': kpca_cluster(data) }
+            ]
         }
 
     # save article with party prediction and distances to closest articles
