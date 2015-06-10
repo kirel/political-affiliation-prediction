@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
+import glob
+from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.decomposition import KernelPCA
+from sklearn.cluster import KMeans
+from scipy.stats.mstats import zscore
 import json
 import re
 import datetime
 import os
-import urllib2
 import cPickle
-from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-import glob
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 from scipy.sparse import vstack
 from numpy.random import permutation
@@ -91,7 +93,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
 
-def pairwise_distance(folder='model',nneighbors=1):
+def pairwise_distance(folder='model',nneighbors=1,ncomponents=50):
     '''
 
     Computes pairwise distances between bag-of-words vectors of articles
@@ -128,6 +130,15 @@ def pairwise_distance(folder='model',nneighbors=1):
     X = bow.fit_transform(data)
     print 'Computing pairwise distances' 
     K = pairwise_distances(X,metric='l2',n_jobs=-1)
+
+    K = pairwise_distances(X,metric='l2',n_jobs=-1)
+    perc = 100./len(news)
+    width = percentile(K.flatten(),perc)
+    
+    # KPCA transform bow vectors
+    Xc = zscore(KernelPCA(n_components=ncomponents,kernel='rbf',gamma=width).fit_transform(X))
+    K = pairwise_distances(Xc,metric='l2',n_jobs=-1)
+    
     # collect closest neighbors
     distances = []
     for urlidx in range(len(data)):
@@ -153,12 +164,6 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     nclusters   number of clusters
 
     '''
-    import glob
-    from sklearn.metrics.pairwise import pairwise_distances
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.decomposition import KernelPCA
-    from sklearn.cluster import KMeans
-    from scipy.stats.mstats import zscore
     # take most recent news file in model folder
     news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
     # collect text data from all articles
@@ -239,8 +244,12 @@ if __name__ == "__main__":
     parser.add_argument('-p','--pairwise',help='If pairwise distances of text should be computed',\
             action='store_true', default=False)
     
+    parser.add_argument('-n','--neighbors',type=int,help='number of nearest neighbors', default=5)
+    
     parser.add_argument('-c','--cluster',help='If texts should be clustered',\
             action='store_true', default=False)
+    
+    parser.add_argument('-k','--nclusters',type=int,help='number of clusters', default=30)
     
     args = vars(parser.parse_args())
     if not os.path.isdir(args['folder']):
@@ -248,6 +257,6 @@ if __name__ == "__main__":
     if args['download']:
         get_news(folder=args['folder'])
     if args['pairwise']:
-        pairwise_distance(folder=args['folder'])
+        pairwise_distance(folder=args['folder'],nneighbors=args['neighbors'])
     if args['cluster']:
-        kpca_cluster(folder=args['folder'])
+        kpca_cluster(folder=args['folder'],nclusters=args['nclusters'])

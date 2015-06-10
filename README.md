@@ -71,7 +71,8 @@ Then check the notebooks i.e. [visualization.ipynb](visualization.ipynb)
 
 Downloads news articles on politics landing page of various german newspapers and computed pairwise distances between them
 
-   python downloader.py --download --pairwise
+
+    $ python downloader.py --download --pairwise
 
 The results are stored in a `distances-xxx.json` file, but also in `web/source/distances.json`.
 
