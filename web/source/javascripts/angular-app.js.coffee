@@ -120,8 +120,6 @@ app.directive 'networkChart', (Network) ->
     update = (network, selectedDistance, selectedClustering, showLinks, showGroups) ->
       nodes = network.articles
 
-      byParty = _.groupBy nodes, 'predictedLabel'
-
       allLinks = for entry in selectedDistance.distances # TODO make selectable
         source: entry[0]
         target: entry[1]
@@ -160,18 +158,21 @@ app.directive 'networkChart', (Network) ->
       calculateVoronoi()
 
       # hulls TODO switch to actual groups
-      hulls = hullsGroup.selectAll('.hull').data(_.pairs(byParty))
+      hulls = hullsGroup.selectAll('.hull').data(selectedClustering.clusters, (c) -> c.name)
       hulls.exit().remove()
-      hulls.enter().append('path').attr('class', (d) -> [party, articles] = d; "hull #{party}")
-      hullGeom = d3.geom.hull().x(xScaleD).y(yScaleD)
-      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
+      hulls.enter().append('path').attr('class', (cluster) -> "hull #{cluster.name}")
+      hullGeom = d3.geom.hull().x((n) -> n.x).y((n) -> n.y)
+      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('linear-closed')
 
-      updateHulls = (hulls) ->
+      clusterColor = d3.scale.category20()
+      updateHulls = (hulls, transition = false) ->
         if scope.showGroups
           hullsGroup.attr "opacity", 1
           hulls
-            .attr "d", (d) ->
-              [party, articles] = d
+            .attr 'fill', (cluster) -> clusterColor(cluster.name)
+            .attr 'stroke', (cluster) -> clusterColor(cluster.name)
+            .attr "d", (cluster) ->
+              articles = _.at(nodes, cluster.members)
               hullArea(hullGeom(articles))
         else
           console.log 'here'
@@ -277,6 +278,8 @@ app.directive 'networkChart', (Network) ->
           xScaleD = (d) -> scaleD(d).x
           yScaleD = (d) -> scaleD(d).y
 
+          hullArea.x(xScaleD).y(yScaleD)
+
           duration = 500
 
           updateNodes(
@@ -289,6 +292,7 @@ app.directive 'networkChart', (Network) ->
           )
 
           updateLinks(link.transition().duration(duration))
+          updateHulls(hulls.transition().duration(duration), true)
 
           updateActive()
         )
