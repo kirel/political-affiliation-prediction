@@ -1,13 +1,13 @@
 $selection-color: rgba(255, 255, 255, .5)
 
 network-chart
-  .node.cdu .partyIndicator, .slice.cdu path, .hull.cdu
+  .node.cdu .party-indicator, .slice.cdu path, .hull.cdu
     fill: $cdu
-  .node.spd .partyIndicator, .slice.spd path, .hull.spd
+  .node.spd .party-indicator, .slice.spd path, .hull.spd
     fill: $spd
-  .node.gruene .partyIndicator, .slice.gruene path, .hull.gruene
+  .node.gruene .party-indicator, .slice.gruene path, .hull.gruene
     fill: $gruene
-  .node.linke .partyIndicator, .slice.linke path, .hull.linke
+  .node.linke .party-indicator, .slice.linke path, .hull.linke
     fill: $linke
 
   .hull
@@ -27,17 +27,17 @@ network-chart
   .voronoi-patch
     path
       fill: none
-      // stroke: rgba(240, 240, 240, .5)
+      stroke: rgba(240, 240, 240, .5)
       // pointer-events: none
       fill: transparent
       &.active
-        // fill: rgba(255,0,0,.1)
+        fill: rgba(255,0,0,.1)
 
   .link
     // stroke: rgba(240, 240, 240, .5)
 
   .node
-    .selectionIndicator
+    .selection-indicator
       fill: $selection-color
       opacity: 0
       transform: scale(0)
@@ -59,7 +59,7 @@ network-chart
         stroke-width: 10px
         stroke-linejoin: round
     &.active
-      .selectionIndicator
+      .selection-indicator
         opacity: 1
         transform: scale(1.5)
       .slice

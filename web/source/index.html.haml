@@ -30,17 +30,22 @@ title: Partypredictor
         %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
     #network-controls
+      %label(for='select-distance') Distances
+      %select#select-distance(ng-options='dist.name for dist in selectableDistances' ng-model='selectedDistance')
       %label(for='show-links')
         %input#show-links(type='checkbox' ng-model='controls.showLinks')
         Abstände visualisieren
+      %br
+      %label(for='select-clustering') Clustering
+      %select#select-clustering(ng-options='clust.name for clust in selectableClusterings' ng-model='selectedClustering')
       %label(for='show-groups')
         %input#show-groups(type='checkbox' ng-model='controls.showGroups')
-        Gruppen visualisieren
+        Cluster visualisieren
       %input#link-percentage(type='range' min='0' max='1' step='0.01' ng-model='controls.linkPercentage')
       %label(for='link-percentage')
         {{controls.linkPercentage}}% Anteil Verbindungen
     #network
-      %network-chart(show-links='controls.showLinks' show-groups='controls.showGroups' link-percentage='controls.linkPercentage')
+      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' link-percentage='controls.linkPercentage')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $
