@@ -26,15 +26,26 @@ network-chart
 
   .voronoi-patch
     path
-      fill: none
-      stroke: rgba(240, 240, 240, .5)
       // pointer-events: none
       fill: transparent
-      &.active
-        fill: rgba(255,0,0,.1)
+  .show-voronoi
+    .voronoi-patch
+      path
+        stroke: rgba(240, 240, 240, .5)
+        &.active
+          fill: rgba(255,0,0,.1)
 
-  .link
-    // stroke: rgba(240, 240, 240, .5)
+  .link-group
+    display: none
+  .show-links
+    .link-group
+      display: inline
+
+  .cluster-group
+    display: none
+  .show-groups
+    .cluster-group
+      display: inline
 
   .node
     .selection-indicator

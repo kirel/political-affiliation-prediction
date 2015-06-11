@@ -69,7 +69,9 @@ app.directive 'networkChart', (Network) ->
     selectedClustering: '='
     showLinks: '='
     showGroups: '='
+    showVoronoi: '='
     linkPercentage: '='
+  template: '<svg ng-class="{\'show-links\': showLinks, \'show-groups\': showGroups, \'show-voronoi\': showVoronoi}"></svg>'
   link: (scope, elem, attrs) ->
     # preparing
     width = 800
@@ -85,12 +87,12 @@ app.directive 'networkChart', (Network) ->
     dScale = d3.scale.linear().clamp(true).range([1,0])
     dScaleColor = d3.scale.linear().clamp(true).range(['firebrick','black'])
 
-    svg = d3.select(elem[0]).append('svg')
+    svg = d3.select(elem[0]).select('svg')
       .attr('width', width)
       .attr('height', height)
 
     # layers
-    hullsGroup = svg.append('g').attr('class', 'hulls-group')
+    clusterGroup = svg.append('g').attr('class', 'cluster-group')
     linkGroup = svg.append('g').attr('class', 'link-group')
     nodeGroup = svg.append('g').attr('class', 'node-group')
     selectionGroup = svg.append('g').attr('class', 'selection-group')
@@ -158,7 +160,7 @@ app.directive 'networkChart', (Network) ->
       calculateVoronoi()
 
       # hulls TODO switch to actual groups
-      hulls = hullsGroup.selectAll('.hull').data(selectedClustering.clusters, (c) -> c.name)
+      hulls = clusterGroup.selectAll('.hull').data(selectedClustering.clusters, (c) -> c.name)
       hulls.exit().remove()
       hulls.enter().append('path').attr('class', (cluster) -> "hull #{cluster.name}")
       hullGeom = d3.geom.hull().x((n) -> n.x).y((n) -> n.y)
@@ -166,17 +168,12 @@ app.directive 'networkChart', (Network) ->
 
       clusterColor = d3.scale.category20()
       updateHulls = (hulls, transition = false) ->
-        if scope.showGroups
-          hullsGroup.attr "opacity", 1
-          hulls
-            .attr 'fill', (cluster) -> clusterColor(cluster.name)
-            .attr 'stroke', (cluster) -> clusterColor(cluster.name)
-            .attr "d", (cluster) ->
-              articles = _.at(nodes, cluster.members)
-              hullArea(hullGeom(articles))
-        else
-          console.log 'here'
-          hullsGroup.attr "opacity", 0
+        hulls
+          .attr 'fill', (cluster) -> clusterColor(cluster.name)
+          .attr 'stroke', (cluster) -> clusterColor(cluster.name)
+          .attr "d", (cluster) ->
+            articles = _.at(nodes, cluster.members)
+            hullArea(hullGeom(articles))
 
       scope.$watch 'showGroups', -> updateHulls(hulls)
 
@@ -192,25 +189,22 @@ app.directive 'networkChart', (Network) ->
       link.enter().append('line').attr('class', 'link')
 
       updateLinks = (link) ->
-        if scope.showLinks
-          link
-            .attr('opacity', (d) -> dScale(d.distance))
-            .attr('stroke', (d) ->
-              dScaleColor(d.distance)
-            ).attr('stroke-width', (d) ->
-              dScale(d.distance)*2
-            )
-            .attr('x1', (d) ->
-              xScaleD d.source
-            ).attr('y1', (d) ->
-              yScaleD d.source
-            ).attr('x2', (d) ->
-              xScaleD d.target
-            ).attr('y2', (d) ->
-              yScaleD d.target
-            )
-        else
-          link.attr('opacity', 0)
+        link
+          .attr('opacity', (d) -> dScale(d.distance))
+          .attr('stroke', (d) ->
+            dScaleColor(d.distance)
+          ).attr('stroke-width', (d) ->
+            dScale(d.distance)*2
+          )
+          .attr('x1', (d) ->
+            xScaleD d.source
+          ).attr('y1', (d) ->
+            yScaleD d.source
+          ).attr('x2', (d) ->
+            xScaleD d.target
+          ).attr('y2', (d) ->
+            yScaleD d.target
+          )
 
       scope.$watch 'showLinks', -> updateLinks(link)
 
@@ -224,8 +218,10 @@ app.directive 'networkChart', (Network) ->
         link = link.data(links, (d) -> d.key)
         link.exit().remove()
         link.enter().append('line').attr('class', 'link')
+
         force.links(links)
         force.start()
+
         updateLinks(link)
 
       node = nodeGroup.selectAll('.node').data(nodes, (a) -> a.url)
@@ -312,9 +308,6 @@ app.directive 'networkChart', (Network) ->
       calculateVoronoiThrottled = _.throttle(calculateVoronoi, 200)
 
       force.on 'tick', ->
-        console.log 'tick'
-        ticks += 1
-        return if ticks < preTicks
         # smooth the layout change with inertia
         rate = 0.8
         smooth = (previous, next) -> (1 - rate) * previous + rate * next
@@ -330,8 +323,3 @@ app.directive 'networkChart', (Network) ->
         calculateVoronoiThrottled()
 
         voronoiPatches.selectAll('path').attr('d', (d) -> d3.svg.line()(d.voronoiArea))
-
-    ticks = 0
-    preTicks = 250
-    scope.$evalAsync ->
-      force.tick() while force.alpha() > 0.05 and ticks < preTicks
