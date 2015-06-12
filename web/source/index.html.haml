@@ -1,7 +1,7 @@
 ---
 title: Partypredictor
 ---
-.container(ng-app='pp')
+.container(ng-app='pp' ng-controller='Main')
   .row
     .col-md-12{:role => "main"}
       %h1.page-header Partypredictor*
@@ -29,8 +29,18 @@ title: Partypredictor
       = succeed "." do
         %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
+    #network-controls
+      %label(for='show-links')
+        %input#show-links(type='checkbox' ng-model='controls.showLinks')
+        Abstände visualisieren
+      %label(for='show-groups')
+        %input#show-groups(type='checkbox' ng-model='controls.showGroups')
+        Gruppen visualisieren
+      %input#link-percentage(type='range' min='0' max='1' step='0.01' ng-model='controls.linkPercentage')
+      %label(for='link-percentage')
+        {{controls.linkPercentage}}% Anteil Verbindungen
     #network
-      %network-chart
+      %network-chart(show-links='controls.showLinks' show-groups='controls.showGroups' link-percentage='controls.linkPercentage')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $
