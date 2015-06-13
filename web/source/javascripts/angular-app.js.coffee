@@ -1,24 +1,47 @@
 app = angular.module 'pp', []
 
-pairwise = (list) ->
+subsetsOf2 = (list) ->
   if list.length < 2 then return []
   first = _.first list
   rest = _.rest list
   pairs = _.map rest, (x) -> [first, x]
-  pairs.concat pairwise(rest)
+  pairs.concat subsetsOf2(rest)
 
 vAdd = (vs...) -> _.reduce( vs, (v, w) -> _.zipWith(v, w, _.add))
 vSub = (v, w) -> vAdd(v, vScale(-1.0, w))
 vScale = (scalar, v) -> _.map(v, (e) -> e*scalar)
 vDot = (v, w) -> _.sum(_.zipWith(v, w, (a, b) -> a*b))
 vNorm = (v) -> Math.sqrt(_.reduce(_.map(v, (e) -> e**2), _.add))
+vNormalized = (v) -> vScale(1/vNorm(v), v)
 euclideanDistance = (v, w) -> vNorm(vSub(v, w))
 
-angle = (doc, other) ->
-  diff = vSub([doc.x, doc.y], [other.x, other.y])
+# calculate angle in 2d
+angle = (vec, other) ->
+  vec.x = -> @[0]
+  vec.y = -> @[1]
+  other.x = -> @[0]
+  other.y = -> @[1]
+  diff = vSub([vec.x, vec.y], [other.x, other.y])
   unitDiff = vScale(1/vNorm(diff), diff)
   alpha = Math.acos(vDot([0, 1], unitDiff)) / Math.PI * 180
   alpha = if diff[0] <= 0 then alpha else 360 - alpha
+
+# offsets polygons - expects clockwise convex polygons
+polygonOffset = (offset, polygon) ->
+  return polygon if polygon.length < 2
+  copy = polygon.slice()
+  first = copy.shift()
+  copy.push first
+
+  pairs = _.zip(polygon, copy)
+  offsetPairs = for [v, w] in pairs
+    normal = vScale offset, vNormalized [-v[1] + w[1], v[0] - w[0]] # rotate 90deg counterclockwise
+    [vAdd(v, normal), vAdd(w, normal)]
+
+  _.flatten offsetPairs
+
+window.polygonOffset = polygonOffset
+
 
 gaussian = (mean = 0, sigma = 1) -> (x) ->
   gaussianConstant = 1 / Math.sqrt(2 * Math.PI)
@@ -56,7 +79,7 @@ app.controller 'Main', ($scope, Network) ->
 
   $scope.controls =
     showGroups: true
-    showLinks: false
+    showLinks: true
     linkPercentage: 0.05
 
 app.factory 'Network', ($q, $http) ->
@@ -69,6 +92,7 @@ app.directive 'networkChart', (Network) ->
     selectedClustering: '='
     showLinks: '='
     showGroups: '='
+    disconnectGroups: '='
     showVoronoi: '='
     linkPercentage: '='
   template: '<svg ng-class="{\'show-links\': showLinks, \'show-groups\': showGroups, \'show-voronoi\': showVoronoi}"></svg>'
@@ -99,7 +123,7 @@ app.directive 'networkChart', (Network) ->
 
 
     force = d3.layout.force()
-      # .gravity(.1)
+      .gravity(.5)
       # .charge(-30)
       .size([width, height])
 
@@ -118,21 +142,25 @@ app.directive 'networkChart', (Network) ->
     scope.$watch 'selectedClustering', (selectedClustering) ->
       return unless selectedClustering
       for cluster in selectedClustering.clusters
-        cluster.memberArticles = _.at(network.articles, cluster.members) for cluster in selectedClustering.clusters
+        cluster.memberArticles = _.at(scope.network.articles, cluster.members)
+        for member in cluster.memberArticles
+          member.cluster = cluster
+
       update(scope.network, scope.selectedDistance, scope.selectedClustering, scope.showGroups, scope.showLinks)
 
     update = (network, selectedDistance, selectedClustering, showLinks, showGroups) ->
       nodes = network.articles
 
       allLinks = for entry in selectedDistance.distances # TODO make selectable
-        source: entry[0]
-        target: entry[1]
+        source: nodes[entry[0]]
+        target: nodes[entry[1]]
         distance: entry[2]
-        key: [entry[0],entry[1]]
+        key: entry[0]*nodes.length+entry[1]
 
       [minDist, maxDist] = d3.extent(allLinks, (l) -> l.distance)
       linkPercentage = .05
       links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
+      links = _.filter(links, (l) -> l.source.cluster == l.target.cluster) if scope.disconnectGroups # FIXME
 
       circleSize = 20/Math.log2(nodes.length)
       innerRadius = circleSize * 1.5
@@ -161,41 +189,54 @@ app.directive 'networkChart', (Network) ->
         _.zipWith(nodes, voronoi(nodes), (node, patch) -> node.voronoiArea = patch)
       calculateVoronoi()
 
+      clusterColor = d3.scale.category20()
       # hulls TODO switch to actual groups
       hulls = clusterGroup.selectAll('g.hull-group').data(selectedClustering.clusters, (c) -> c.name)
       hulls.exit().remove()
       hullGroup = hulls.enter().append('g').attr('class', (cluster) -> "hull-group #{cluster.name}")
-      hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}")
+      hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}").attr 'fill', (cluster) -> clusterColor(cluster.name)
       hullGroup.append('path').attr('class', 'description-anchor-path').attr('id', (c) -> c.name.replace(' ', '-'))
-      hullGroup.append('text').append('textPath').attr('xlink:href', (c) -> "##{c.name.replace(' ', '-')}").text((c) -> c.description)
+      hullGroup.append('text').attr 'stroke', (cluster) -> clusterColor(cluster.name)
+        .append('textPath').attr('xlink:href', (c) -> "##{c.name.replace(' ', '-')}").text((c) -> c.description)
           # .attr('text-anchor', 'middle')
           # .attr('dominant-baseline', 'hanging')
       hullGeom = d3.geom.hull().x((n) -> n.x).y((n) -> n.y)
       hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
       hullTextPath = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
 
-      clusterColor = d3.scale.category20()
       updateHulls = (hulls) ->
         hulls.selectAll('path.hull')
-          .attr 'fill', (cluster) -> clusterColor(cluster.name)
-          .attr 'stroke', (cluster) -> clusterColor(cluster.name)
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
-            hullArea(hullGeom(articles))
+            hullArticles = hullGeom(articles).reverse()
+            polygon = ([a.x, a.y] for a in hullArticles)
+            # mean = vScale(1/polygon.length, vAdd(polygon...))
+            # polygon = _.sortBy(polygon, (v) -> -angle([0, 1], vSub(v, mean)))
+            offsetPoly = polygonOffset(5, polygon)
+            offsetPoly.forEach (p) ->
+              p.x = p[0]
+              p.y = p[1]
+            hullArea(offsetPoly)
         hulls.selectAll('path.description-anchor-path')
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
-            hullTextPath(hullGeom(articles).reverse())
+            hullArticles = hullGeom(articles).reverse()
+            polygon = ([a.x, a.y] for a in hullArticles)
+            # mean = vScale(1/polygon.length, vAdd(polygon...))
+            # polygon = _.sortBy(polygon, (v) -> -angle([0, 1], vSub(v, mean)))
+            offsetPoly = polygonOffset(7, polygon)
+            offsetPoly.forEach (p) ->
+              p.x = p[0]
+              p.y = p[1]
+            hullTextPath(offsetPoly)
 
       # interaction
       updateActive = ->
         voronoiPatches.classed('active', (d) -> d.active)
         _.delay (-> node.classed('active', (d) -> d.active)) # delay to ensure css animations still work
 
-      link = linkGroup.selectAll('.link').data(links, (d) -> d.key)
-
+      link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
       link.exit().remove()
-
       link.enter().append('line').attr('class', 'link')
 
       updateLinks = (link) ->
@@ -216,13 +257,30 @@ app.directive 'networkChart', (Network) ->
             yScaleD d.target
           )
 
-      scope.$watch 'linkPercentage', (linkPercentage) ->
-        linkPercentage = parseFloat(linkPercentage)
-        return unless linkPercentage
+      scope.$watch 'disconnectGroups', ->
+        links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*scope.linkPercentage)
+        links = _.filter(links, (l) -> l.source.cluster == l.target.cluster) if scope.disconnectGroups # FIXME
 
-        dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range([1,0])
-        dScaleColor = d3.scale.linear().domain([minDist, (minDist+maxDist)*linkPercentage]).clamp(true).range(['firebrick','black'])
-        links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*linkPercentage)
+        link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
+        link.exit().remove()
+        link.enter().append('line').attr('class', 'link')
+
+        force.links(links)
+        force.start()
+
+        updateLinks(link)
+
+
+      scope.$watch 'linkPercentage', (linkPercentage) ->
+        return unless linkPercentage
+        scope.linkPercentage = parseFloat(linkPercentage)
+
+        dScale = d3.scale.linear().domain([minDist, (minDist+maxDist)*scope.linkPercentage]).clamp(true).range([1,0])
+        dScaleColor = d3.scale.linear().domain([minDist, (minDist+maxDist)*scope.linkPercentage]).clamp(true).range(['firebrick','black'])
+
+        links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*scope.linkPercentage)
+        links = _.filter(links, (l) -> l.source.cluster == l.target.cluster) if scope.disconnectGroups # FIXME
+
         link = link.data(links, (d) -> d.key)
         link.exit().remove()
         link.enter().append('line').attr('class', 'link')

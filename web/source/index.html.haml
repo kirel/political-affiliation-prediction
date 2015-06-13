@@ -41,6 +41,9 @@ title: Partypredictor
       %label(for='show-groups')
         %input#show-groups(type='checkbox' ng-model='controls.showGroups')
         Cluster visualisieren
+      %label(for='disconnect-groups')
+        %input#disconnect-groups(type='checkbox' ng-model='controls.disconnectGroups')
+        Cluster entkoppeln
       %label(for='show-voronoi')
         %input#show-voronoi(type='checkbox' ng-model='controls.showVoronoi')
         Selektionspolygone visualisieren
@@ -48,7 +51,7 @@ title: Partypredictor
       %label(for='link-percentage')
         {{controls.linkPercentage}}% Anteil Verbindungen
     #network
-      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage')
+      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $

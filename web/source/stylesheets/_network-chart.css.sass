@@ -14,23 +14,27 @@ network-chart
     pointer-events: none
     opacity: 0.4
     path.hull
-      stroke-width: 20px
+      stroke-width: 0px//20px FIXME
       stroke-linejoin: round
-    &.cdu path.hull
-      stroke: $cdu
-    &.spd path.hull
-      stroke: $spd
-    &.gruene path.hull
-      stroke: $gruene
-    &.linke path.hull
-      stroke: $linke
+    &.cdu
+      path.hull, text
+        stroke: $cdu
+    &.spd
+      path.hull, text
+        stroke: $spd
+    &.gruene
+      path.hull, text
+        stroke: $gruene
+    &.linke
+      path.hull, text
+        stroke: $linke
 
   .description-anchor-path
     fill: none
 
   .hull-group
-    font-size: 12px
-    font-color: black
+    font-size: 14px
+    // stroke: red
 
   .voronoi-patch
     path
