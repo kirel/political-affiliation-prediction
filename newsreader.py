@@ -5,6 +5,7 @@ import datetime
 import os
 import urllib2
 import cPickle
+import itertools
 from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -110,7 +111,7 @@ def all_saved_news(folder='model'):
     return articles, data
 
 
-def pairwise_distance(folder='model',nneighbors=100):
+def l2(data, nneighbors=100, folder='model'):
     '''
 
     Computes pairwise distances between bag-of-words vectors of articles
@@ -123,9 +124,8 @@ def pairwise_distance(folder='model',nneighbors=100):
     from sklearn.metrics.pairwise import pairwise_distances
     from vectorizer import Vectorizer
     # take most recent news file in model folder
-    articles, data = all_saved_news()
     # collect text data from all articles
-    
+
     # worked a bit on more stopwords - mainly filtering out html related noise
     stops = map(lambda x:x.lower().strip(),open(folder+'/stopwords.txt').readlines()[6:])
 
@@ -133,7 +133,7 @@ def pairwise_distance(folder='model',nneighbors=100):
     bow = TfidfVectorizer(min_df=2,stop_words=stops)
     X = bow.fit_transform(data)
     print 'Computing pairwise distances' 
-    K = pairwise_distances(X,metric='l2',n_jobs=-1)
+    K = pairwise_distances(X, metric='l2',n_jobs=-1)
     # collect closest neighbors
     distances = []
     for urlidx in range(len(data)):
@@ -141,15 +141,9 @@ def pairwise_distance(folder='model',nneighbors=100):
         for sidx in idx:
             distances.append([urlidx,sidx,(idx==sidx).nonzero()[0][0]])
 
-    result = {'articles':articles,'distances':distances}
-    # save article with party prediction and distances to closest articles
-    datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
-    # also save that latest version for the visualization
-    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(result))
-    
+    return distances
 
-def kpca_cluster(folder='model',nclusters=30,topwhat=10):
+def kpca_cluster(data,nclusters=30,topwhat=10):
     '''
 
     Computes clustering of bag-of-words vectors of articles
@@ -165,8 +159,6 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     from sklearn.cluster import KMeans
     from scipy.stats.mstats import zscore
 
-    articles, data = all_saved_news()
-
     # worked a bit on more stopwords - mainly filtering out html related noise
     stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
 
@@ -180,9 +172,9 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     # using now stopwords and filtering out digits
     print 'Computing pairwise distances' 
     K = pairwise_distances(X,metric='l2',n_jobs=-1)
-    perc = 100./len(articles)
+    perc = 100./len(data)
     width = percentile(K.flatten(),perc)
-    
+
     # KPCA transform bow vectors
     Xc = zscore(KernelPCA(n_components=nclusters,kernel='rbf',gamma=width).fit_transform(X))
     # compute clusters
@@ -190,33 +182,56 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     Xc = km.predict(Xc)
     # cluster centers
     km.cluster_centers_
-    
-    distances = []
+
+    clusters = []
     for icluster in range(nclusters):
         nmembers = (Xc==icluster).sum()
-        if nmembers < len(articles)*2.0 and nmembers > 1:
+        if nmembers < len(data)*2.0 and nmembers > 1: # only group clusters big enough but not too big
             members = (Xc==icluster).nonzero()[0]
             topwordidx = array(X[members,:].sum(axis=0))[0].argsort()[-topwhat:][::-1]
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
             print 'Cluster %d'%icluster + ' %d members'%nmembers + '\n\t'+topwords
-            articles.append(
-            {   'source':'Cluster-%d'%icluster,\
-                'title':topwords,\
-                'url':'',\
-                'prediction':articles[members[0]]['prediction'],\
-                'predictedLabel':articles[members[0]]['predictedLabel']})
-            
-            for member in members:
-                distances.append([len(articles)-1,member,1.])
-        # a bag-of-words transformer 
 
-    result = {'articles':articles,'distances':distances}
+            clusters.append({
+                'name':'Cluster-%d'%icluster,
+                'description': topwords,
+                'members': list(members)
+                })
+
+    return clusters
+
+def party_cluster(articles):
+    clusters = []
+    keyf = lambda a: a[1]['predictedLabel']
+    for k, group in itertools.groupby(sorted(enumerate(articles), key=keyf), keyf):
+        clusters.append({
+            'name': k,
+            'description': 'none',
+            'members': [index_article_tuple[0] for index_article_tuple in group]
+            })
+
+    return clusters
+
+def write_distances_json(folder='model'):
+    articles, data = all_saved_news(folder)
+
+    distances_json = {
+            'articles': articles,
+            'distances': [
+                { 'name': 'l2', 'distances': l2(data) }
+            ],
+            'clusterings': [
+                { 'name': 'prediction', 'clusters': party_cluster(articles) },
+                { 'name': 'kpca_30', 'clusters': kpca_cluster(data) }
+            ]
+        }
+
     # save article with party prediction and distances to closest articles
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
+    open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(distances_json))
     # also save that latest version for the visualization
-    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(result))
-    
+    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(distances_json))
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(\
@@ -228,10 +243,7 @@ if __name__ == "__main__":
     parser.add_argument('-d','--download',help='If files should be downloaded',\
             action='store_true', default=False)
     
-    parser.add_argument('-p','--pairwise',help='If pairwise distances of text should be computed',\
-            action='store_true', default=False)
-    
-    parser.add_argument('-c','--cluster',help='If texts should be clustered',\
+    parser.add_argument('-p','--distances',help='If pairwise distances of text should be computed',\
             action='store_true', default=False)
     
     args = vars(parser.parse_args())
@@ -239,7 +251,5 @@ if __name__ == "__main__":
         os.mkdir(args['folder']) 
     if args['download']:
         get_news(folder=args['folder'])
-    if args['pairwise']:
-        pairwise_distance(folder=args['folder'])
-    if args['cluster']:
-        kpca_cluster(folder=args['folder'])
+    if args['distances']:
+        write_distances_json(folder=args['folder'])
