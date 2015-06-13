@@ -79,7 +79,7 @@ app.controller 'Main', ($scope, Network) ->
 
   $scope.controls =
     showGroups: true
-    showLinks: true
+    showLinks: false
     linkPercentage: 0.05
 
 app.factory 'Network', ($q, $http) ->
@@ -195,25 +195,24 @@ app.directive 'networkChart', (Network) ->
       hulls = clusterGroup.selectAll('g.hull-group').data(selectedClustering.clusters, (c) -> c.name)
       hulls.exit().remove()
       hullGroup = hulls.enter().append('g').attr('class', (cluster) -> "hull-group #{cluster.name}")
-      hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}").attr 'fill', (cluster) -> clusterColor(cluster.name)
+      hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}")
+        .attr 'fill', (cluster) -> clusterColor(cluster.name)
+        .attr 'stroke', (cluster) -> d3.rgb(clusterColor(cluster.name))#.darker(2)
       hullGroup.append('path').attr('class', 'description-anchor-path').attr('id', (c) -> c.name.replace(' ', '-'))
-      hullGroup.append('text').attr 'stroke', (cluster) -> clusterColor(cluster.name)
+      hullGroup.append('text').attr 'stroke', (cluster) -> d3.rgb(clusterColor(cluster.name))#.darker(2)
         .append('textPath').attr('xlink:href', (c) -> "##{c.name.replace(' ', '-')}").text((c) -> c.description)
-          # .attr('text-anchor', 'middle')
-          # .attr('dominant-baseline', 'hanging')
       hullGeom = d3.geom.hull().x((n) -> n.x).y((n) -> n.y)
       hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
       hullTextPath = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
 
       updateHulls = (hulls) ->
+        # TODO precalculate offsetPolys in one loop here
         hulls.selectAll('path.hull')
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
             hullArticles = hullGeom(articles).reverse()
             polygon = ([a.x, a.y] for a in hullArticles)
-            # mean = vScale(1/polygon.length, vAdd(polygon...))
-            # polygon = _.sortBy(polygon, (v) -> -angle([0, 1], vSub(v, mean)))
-            offsetPoly = polygonOffset(5, polygon)
+            offsetPoly = polygonOffset(6, polygon)
             offsetPoly.forEach (p) ->
               p.x = p[0]
               p.y = p[1]
@@ -223,9 +222,7 @@ app.directive 'networkChart', (Network) ->
             articles = _.at(nodes, cluster.members)
             hullArticles = hullGeom(articles).reverse()
             polygon = ([a.x, a.y] for a in hullArticles)
-            # mean = vScale(1/polygon.length, vAdd(polygon...))
-            # polygon = _.sortBy(polygon, (v) -> -angle([0, 1], vSub(v, mean)))
-            offsetPoly = polygonOffset(7, polygon)
+            offsetPoly = polygonOffset(8, polygon)
             offsetPoly.forEach (p) ->
               p.x = p[0]
               p.y = p[1]
@@ -234,6 +231,7 @@ app.directive 'networkChart', (Network) ->
       # interaction
       updateActive = ->
         voronoiPatches.classed('active', (d) -> d.active)
+        hulls.classed('active', (d) -> d.active)
         _.delay (-> node.classed('active', (d) -> d.active)) # delay to ensure css animations still work
 
       link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
@@ -269,7 +267,7 @@ app.directive 'networkChart', (Network) ->
         force.links(links)
         force.start()
 
-        updateLinks(link)
+        updateLinks(link) if scope.showLinks
 
 
       scope.$watch 'linkPercentage', (linkPercentage) ->
@@ -289,7 +287,7 @@ app.directive 'networkChart', (Network) ->
         force.links(links)
         force.start()
 
-        updateLinks(link)
+        updateLinks(link) if scope.showLinks
 
       node = nodeGroup.selectAll('.node').data(nodes, (a) -> a.url)
       enterNodeGroup = node.enter().append('g')
@@ -330,6 +328,7 @@ app.directive 'networkChart', (Network) ->
         .on('mouseover', (d) ->
           scope.$apply -> scope.selectedArticle = d
           d.active = true
+          d.cluster?.active = true
 
           scaleD = (other) ->
             selectedPos = [xScale(d.x), yScale(d.y)]
@@ -356,13 +355,14 @@ app.directive 'networkChart', (Network) ->
                 .duration(duration)
           )
 
-          updateLinks(link.transition().duration(duration))
-          updateHulls(hulls.transition().duration(duration))
+          updateLinks(link.transition().duration(duration)) if scope.showLinks
+          updateHulls(hulls.transition().duration(duration)) if scope.showGroups
 
           updateActive()
         )
         .on('mouseout', (d) ->
           d.active = false
+          d.cluster?.active = false
           updateActive()
         )
 
@@ -382,9 +382,9 @@ app.directive 'networkChart', (Network) ->
         xScale.domain(_.zipWith(xScale.domain(), d3.extent(nodes, (n) -> n.x), smooth))
         yScale.domain(_.zipWith(yScale.domain(), d3.extent(nodes, (n) -> n.y), smooth))
 
-        updateLinks(link)
         updateNodes(node)
-        updateHulls(hulls)
+        updateLinks(link) if scope.showLinks
+        updateHulls(hulls) if scope.showGroups
 
         # update voronoi patches
         calculateVoronoiThrottled()
