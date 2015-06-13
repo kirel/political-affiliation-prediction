@@ -1,28 +1,36 @@
 $selection-color: rgba(255, 255, 255, .5)
 
 network-chart
-  .node.cdu .party-indicator, .slice.cdu path, .hull.cdu
+  .node.cdu .party-indicator, .slice.cdu path, .hull-group.cdu path.hull
     fill: $cdu
-  .node.spd .party-indicator, .slice.spd path, .hull.spd
+  .node.spd .party-indicator, .slice.spd path, .hull-group.spd path.hull
     fill: $spd
-  .node.gruene .party-indicator, .slice.gruene path, .hull.gruene
+  .node.gruene .party-indicator, .slice.gruene path, .hull-group.gruene path.hull
     fill: $gruene
-  .node.linke .party-indicator, .slice.linke path, .hull.linke
+  .node.linke .party-indicator, .slice.linke path, .hull-group.linke path.hull
     fill: $linke
 
-  .hull
+  .hull-group
     pointer-events: none
     opacity: 0.4
-    stroke-width: 20px
-    stroke-linejoin: round
-    &.cdu
+    path.hull
+      stroke-width: 20px
+      stroke-linejoin: round
+    &.cdu path.hull
       stroke: $cdu
-    &.spd
+    &.spd path.hull
       stroke: $spd
-    &.gruene
+    &.gruene path.hull
       stroke: $gruene
-    &.linke
+    &.linke path.hull
       stroke: $linke
+
+  .description-anchor-path
+    fill: none
+
+  .hull-group
+    font-size: 12px
+    font-color: black
 
   .voronoi-patch
     path

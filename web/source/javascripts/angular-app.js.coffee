@@ -52,11 +52,11 @@ app.controller 'Main', ($scope, Network) ->
     $scope.selectableDistances = network.distances
     $scope.selectableClusterings = network.clusterings
     $scope.selectedDistance = _.first($scope.selectableDistances)
-    $scope.selectedClustering = _.first($scope.selectableClusterings)
+    $scope.selectedClustering = _.last($scope.selectableClusterings)
 
   $scope.controls =
     showGroups: true
-    showLinks: true
+    showLinks: false
     linkPercentage: 0.05
 
 app.factory 'Network', ($q, $http) ->
@@ -117,6 +117,8 @@ app.directive 'networkChart', (Network) ->
 
     scope.$watch 'selectedClustering', (selectedClustering) ->
       return unless selectedClustering
+      for cluster in selectedClustering.clusters
+        cluster.memberArticles = _.at(network.articles, cluster.members) for cluster in selectedClustering.clusters
       update(scope.network, scope.selectedDistance, scope.selectedClustering, scope.showGroups, scope.showLinks)
 
     update = (network, selectedDistance, selectedClustering, showLinks, showGroups) ->
@@ -160,22 +162,30 @@ app.directive 'networkChart', (Network) ->
       calculateVoronoi()
 
       # hulls TODO switch to actual groups
-      hulls = clusterGroup.selectAll('.hull').data(selectedClustering.clusters, (c) -> c.name)
+      hulls = clusterGroup.selectAll('g.hull-group').data(selectedClustering.clusters, (c) -> c.name)
       hulls.exit().remove()
-      hulls.enter().append('path').attr('class', (cluster) -> "hull #{cluster.name}")
+      hullGroup = hulls.enter().append('g').attr('class', (cluster) -> "hull-group #{cluster.name}")
+      hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}")
+      hullGroup.append('path').attr('class', 'description-anchor-path').attr('id', (c) -> c.name.replace(' ', '-'))
+      hullGroup.append('text').append('textPath').attr('xlink:href', (c) -> "##{c.name.replace(' ', '-')}").text((c) -> c.description)
+          # .attr('text-anchor', 'middle')
+          # .attr('dominant-baseline', 'hanging')
       hullGeom = d3.geom.hull().x((n) -> n.x).y((n) -> n.y)
-      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('linear-closed')
+      hullArea = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
+      hullTextPath = d3.svg.line().x(xScaleD).y(yScaleD).interpolate('basis-closed')
 
       clusterColor = d3.scale.category20()
-      updateHulls = (hulls, transition = false) ->
-        hulls
+      updateHulls = (hulls) ->
+        hulls.selectAll('path.hull')
           .attr 'fill', (cluster) -> clusterColor(cluster.name)
           .attr 'stroke', (cluster) -> clusterColor(cluster.name)
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
             hullArea(hullGeom(articles))
-
-      scope.$watch 'showGroups', -> updateHulls(hulls)
+        hulls.selectAll('path.description-anchor-path')
+          .attr "d", (cluster) ->
+            articles = _.at(nodes, cluster.members)
+            hullTextPath(hullGeom(articles).reverse())
 
       # interaction
       updateActive = ->
@@ -205,8 +215,6 @@ app.directive 'networkChart', (Network) ->
           ).attr('y2', (d) ->
             yScaleD d.target
           )
-
-      scope.$watch 'showLinks', -> updateLinks(link)
 
       scope.$watch 'linkPercentage', (linkPercentage) ->
         linkPercentage = parseFloat(linkPercentage)
@@ -275,6 +283,7 @@ app.directive 'networkChart', (Network) ->
           yScaleD = (d) -> scaleD(d).y
 
           hullArea.x(xScaleD).y(yScaleD)
+          hullTextPath.x(xScaleD).y(yScaleD)
 
           duration = 500
 
@@ -288,13 +297,12 @@ app.directive 'networkChart', (Network) ->
           )
 
           updateLinks(link.transition().duration(duration))
-          updateHulls(hulls.transition().duration(duration), true)
+          updateHulls(hulls.transition().duration(duration))
 
           updateActive()
         )
         .on('mouseout', (d) ->
           d.active = false
-          # d.fixed = false
           updateActive()
         )
 
@@ -316,7 +324,6 @@ app.directive 'networkChart', (Network) ->
 
         updateLinks(link)
         updateNodes(node)
-
         updateHulls(hulls)
 
         # update voronoi patches
