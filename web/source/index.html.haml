@@ -50,8 +50,14 @@ title: Partypredictor
       %input#link-percentage(type='range' min='0' max='1' step='0.01' ng-model='controls.linkPercentage')
       %label(for='link-percentage')
         {{controls.linkPercentage}}% Anteil Verbindungen
+      %div
+        {{article.title}}
+        —
+        {{article.cluster.name}}
+        —
+        {{article.cluster.description}}
     #network
-      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage')
+      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage' selected-article='article')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $

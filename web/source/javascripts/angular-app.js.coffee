@@ -95,6 +95,7 @@ app.directive 'networkChart', (Network) ->
     disconnectGroups: '='
     showVoronoi: '='
     linkPercentage: '='
+    selectedArticle: '='
   template: '<svg ng-class="{\'show-links\': showLinks, \'show-groups\': showGroups, \'show-voronoi\': showVoronoi}"></svg>'
   link: (scope, elem, attrs) ->
     # preparing
@@ -327,6 +328,7 @@ app.directive 'networkChart', (Network) ->
 
       voronoiPatches
         .on('mouseover', (d) ->
+          scope.$apply -> scope.selectedArticle = d
           d.active = true
 
           scaleD = (other) ->
