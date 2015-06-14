@@ -77,7 +77,7 @@ The results are stored in a `distances-xxx.json` file, but also in `web/source/d
 
 # Deployment
 
-    docker build -t kirel/political-affiliation-prediction -t
+    docker build -t kirel/political-affiliation-prediction .
     docker push kirel/political-affiliation-prediction
 
 To test the container locally:

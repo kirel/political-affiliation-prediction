@@ -214,7 +214,10 @@ app.directive 'networkChart', (Network) ->
         hulls.selectAll('path.hull')
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
-            hullArticles = hullGeom(articles).reverse()
+            hullArticles = if articles.length > 2
+              hullGeom(articles).reverse()
+            else
+              articles
             polygon = ([a.x, a.y] for a in hullArticles)
             offsetPoly = polygonOffset(6, polygon)
             offsetPoly.forEach (p) ->
@@ -224,7 +227,10 @@ app.directive 'networkChart', (Network) ->
         hulls.selectAll('path.description-anchor-path')
           .attr "d", (cluster) ->
             articles = _.at(nodes, cluster.members)
-            hullArticles = hullGeom(articles).reverse()
+            hullArticles = if articles.length > 2
+              hullGeom(articles).reverse()
+            else
+              articles
             polygon = ([a.x, a.y] for a in hullArticles)
             offsetPoly = polygonOffset(8, polygon)
             offsetPoly.forEach (p) ->
