@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-; GERMAN STOPWORDS 
+; GERMAN STOPWORDS
 ; Zusammmengetragen von Marco Götze, Steffen Geyer
-; LAST UPDATE 15. Jan 2011 
+; LAST UPDATE 15. Jan 2011
 ; Besucht doch mal: www.solariz.de
 ; Quell Link: http://solariz.de/649/deutsche-stopwords.htm
-bild 
-themeurl 
-themename 
+bild
+themeurl
+themename
 teasers
 ausgerechnet
-medienbericht 
+medienbericht
 tag
-können 
-persönliche 
-empfänger 
-umweltschützer 
+können
+persönliche
+empfänger
+umweltschützer
 beobachtet
 lehren
 könnte
@@ -22,13 +22,12 @@ hergereicht
 großen
 groß
 un
-rubrik 
-sonntag 
-über 
-persönliche 
-empfänger 
-für
-tatsächlich 
+rubrik
+sonntag
+über
+persönliche
+empfänger
+tatsächlich
 spielt
 vollständig
 daraufhin
@@ -37,24 +36,24 @@ für
 treffen
 saßen
 berührte
-männer 
-tagen 
+männer
+tagen
 termin
 zeigt
 name
 bedeutung
-beansprucht 
-sonntag 
+beansprucht
+sonntag
 dürfe
 könnte
-spricht 
+spricht
 könnten
-antwort 
+antwort
 gefunden
-gehalt 
+gehalt
 mitarbeiter
 könnte
-heißt 
+heißt
 wäre
 dürfe
 ohnehin
@@ -62,22 +61,22 @@ bereit
 sonntagszeitung
 fotos
 drittel
-schritt 
+schritt
 twitter
 gerade
 SPD
 CDU
 CSU
 will
-Matveev 
-Kurgan 
+Matveev
+Kurgan
 Bilder
 empfehlen
 blog
 groß
 täglich
 komische
-aufgestiegen 
+aufgestiegen
 lenz
 menge
 umweltschützer
