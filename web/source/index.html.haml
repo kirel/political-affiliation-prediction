@@ -30,14 +30,20 @@ title: Partypredictor
         %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
     #network-controls
-      %label(for='select-distance') Distances
-      %select#select-distance(ng-options='dist.name for dist in selectableDistances' ng-model='selectedDistance')
+      %label Distances
+      %span(ng-repeat='dist in selectableDistances')
+        %label(for="distance-{{dist.name}}")
+          %input(type="radio" ng-value="dist" ng-model='controls.selectedDistance' name='distance' id="distance-{{dist.name}}")
+          {{dist.name}}
       %label(for='show-links')
         %input#show-links(type='checkbox' ng-model='controls.showLinks')
         Abstände visualisieren
       %br
-      %label(for='select-clustering') Clustering
-      %select#select-clustering(ng-options='clust.name for clust in selectableClusterings' ng-model='selectedClustering')
+      %label Clustering
+      %span(ng-repeat='clust in selectableClusterings')
+        %label(for="clustering-{{clust.name}}")
+          %input(type="radio" ng-value="clust" ng-model='controls.selectedClustering' name='clustering' id="clustering-{{clust.name}}")
+          {{clust.name}}
       %label(for='show-groups')
         %input#show-groups(type='checkbox' ng-model='controls.showGroups')
         Cluster visualisieren
@@ -57,7 +63,7 @@ title: Partypredictor
         —
         {{article.cluster.description}}
     #network
-      %network-chart(network='network' selected-distance='selectedDistance' selected-clustering='selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage' selected-article='article')
+      %network-chart(network='network' selected-distance='controls.selectedDistance' selected-clustering='controls.selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage' selected-article='article')
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $

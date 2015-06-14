@@ -214,7 +214,7 @@ def party_cluster(articles):
     for k, group in itertools.groupby(sorted(enumerate(articles), key=keyf), keyf):
         clusters.append({
             'name': k,
-            'description': 'none',
+            'description': k,
             'members': [index_article_tuple[0] for index_article_tuple in group]
             })
 

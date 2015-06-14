@@ -70,17 +70,17 @@ window.article = do ->
 
 app.controller 'Main', ($scope, Network) ->
 
-  Network.then (network) ->
-    $scope.network = network
-    $scope.selectableDistances = network.distances
-    $scope.selectableClusterings = network.clusterings
-    $scope.selectedDistance = _.first($scope.selectableDistances)
-    $scope.selectedClustering = _.last($scope.selectableClusterings)
-
   $scope.controls =
     showGroups: true
     showLinks: false
     linkPercentage: 0.05
+
+  Network.then (network) ->
+    $scope.network = network
+    $scope.selectableDistances = network.distances
+    $scope.selectableClusterings = network.clusterings
+    $scope.controls.selectedDistance = _.first($scope.selectableDistances)
+    $scope.controls.selectedClustering = _.last($scope.selectableClusterings)
 
 app.factory 'Network', ($q, $http) ->
   $http.get('distances.json').then (response) -> response.data
@@ -139,6 +139,10 @@ app.directive 'networkChart', (Network) ->
     scope.$watch 'network', (network) ->
       return unless network
       update(network, scope.selectedDistance, scope.selectedClustering, scope.showLinks, scope.showGroups)
+
+    scope.$watch 'selectedDistance', (selectedDistance) ->
+      return unless selectedDistance
+      update(scope.network, scope.selectedDistance, scope.selectedClustering, scope.showGroups, scope.showLinks)
 
     scope.$watch 'selectedClustering', (selectedClustering) ->
       return unless selectedClustering
