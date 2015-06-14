@@ -197,8 +197,8 @@ app.directive 'networkChart', (Network) ->
 
       clusterColor = d3.scale.category20()
       # hulls TODO switch to actual groups
-      hulls = clusterGroup.selectAll('g.hull-group').data(selectedClustering.clusters, (c) -> c.name)
-      hulls.exit().remove()
+      clusterGroup.selectAll('*').remove()
+      hulls = clusterGroup.selectAll('g.hull-group').data(selectedClustering.clusters, (c) -> selectedClustering.name+c.name)
       hullGroup = hulls.enter().append('g').attr('class', (cluster) -> "hull-group #{cluster.name}")
       hullGroup.append('path').attr('class', (cluster) -> "hull #{cluster.name}")
         .attr 'fill', (cluster) -> clusterColor(cluster.name)
