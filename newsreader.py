@@ -154,7 +154,7 @@ def pairwise_dists(data, nneighbors=100, folder='model', dist='l2'):
 
     return distances
 
-def kpca_cluster(data,nclusters=30,topwhat=10):
+def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
     '''
 
     Computes clustering of bag-of-words vectors of articles
@@ -177,12 +177,16 @@ def kpca_cluster(data,nclusters=30,topwhat=10):
 
     # using now stopwords and filtering out digits
     print 'Computing pairwise distances' 
-    K = pairwise_distances(X,metric='l2',n_jobs=-1)
+    K = pairwise_distances(X,metric='l2',n_jobs=1)
     perc = 100./len(data)
     width = percentile(K.flatten(),perc)
 
     # KPCA transform bow vectors
-    Xc = zscore(KernelPCA(n_components=nclusters,kernel='rbf',gamma=width).fit_transform(X))
+    Xc = KernelPCA(n_components=ncomponents,kernel='rbf',gamma=width).fit_transform(X)
+    
+    if zscored:
+        Xc = zscore(Xc)
+    
     # compute clusters
     km = KMeans(n_clusters=nclusters).fit(Xc)
     Xc = km.predict(Xc)
@@ -190,7 +194,7 @@ def kpca_cluster(data,nclusters=30,topwhat=10):
     clusters = []
     for icluster in range(nclusters):
         nmembers = (Xc==icluster).sum()
-        if nmembers < len(data)*2.0 and nmembers > 1: # only group clusters big enough but not too big
+        if nmembers < len(data) / 5.0 and nmembers > 1: # only group clusters big enough but not too big
             members = (Xc==icluster).nonzero()[0]
             topwordidx = array(X[members,:].sum(axis=0))[0].argsort()[-topwhat:][::-1]
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
@@ -226,7 +230,14 @@ def write_distances_json(folder='model'):
             ],
             'clusterings': [
                 { 'name': 'prediction', 'clusters': party_cluster(articles) },
-                { 'name': 'kpca_30', 'clusters': kpca_cluster(data,nclusters=30) }
+                { 'name': 'kpca_nclusters_30_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=30) },
+                { 'name': 'kpca_nclusters_100_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=100,ncomponents=30) },
+                { 'name': 'kpca_nclusters_30_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=30) },
+                { 'name': 'kpca_nclusters_100_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=30) },
+                { 'name': 'kpca_nclusters_30_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=100) },
+                { 'name': 'kpca_nclusters_100_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=100,ncomponents=100) },
+                { 'name': 'kpca_nclusters_30_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=100) },
+                { 'name': 'kpca_nclusters_100_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=100) }
             ]
         }
 
