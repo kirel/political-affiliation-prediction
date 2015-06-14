@@ -146,7 +146,8 @@ app.directive 'networkChart', (Network) ->
 
     scope.$watch 'selectedClustering', (selectedClustering) ->
       return unless selectedClustering
-      for cluster in selectedClustering.clusters
+      article.cluster = null for article in scope.network.articles # reset clusters
+      for cluster in scope.selectedClustering.clusters
         cluster.memberArticles = _.at(scope.network.articles, cluster.members)
         for member in cluster.memberArticles
           member.cluster = cluster
