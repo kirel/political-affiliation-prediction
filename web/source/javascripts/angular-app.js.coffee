@@ -291,7 +291,7 @@ app.directive 'networkChart', (Network) ->
         links = _.filter(allLinks, (l) -> l.distance < (minDist + maxDist)*scope.linkPercentage)
         links = _.filter(links, (l) -> l.source.cluster == l.target.cluster) if scope.disconnectGroups # FIXME
 
-        link = link.data(links, (d) -> d.key)
+        link = linkGroup.selectAll('line.link').data(links, (d) -> d.key)
         link.exit().remove()
         link.enter().append('line').attr('class', 'link')
 
