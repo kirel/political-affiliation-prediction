@@ -8,6 +8,7 @@ import re
 import datetime
 import os
 import cPickle
+import codecs
 import itertools
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
@@ -56,7 +57,7 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
             titles = site.findAll("a", { "class" : "as_teaser-kicker" })
             urls = [a['href'] for a in titles]
          
-        if source is 'sz':
+        if source is 'sz-without-readability':
             # fetching articles from sueddeutsche.de/politik
             url = 'http://www.sueddeutsche.de/politik'
             site = BeautifulSoup(urllib2.urlopen(url).read())
@@ -93,12 +94,15 @@ def get_news(sources=['spiegel','faz','welt','zeit','sz'], folder='model'):
 
 def all_saved_news(folder='model'):
     import glob
+    from string import digits
     # get just the most recent news articles file (assuming date label ordering)
     news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
     # collect text data from all articles
     articles, data = [], []
     for source in news.keys():
         for title, article in news[source].items():
+            # remove numbers
+            for d in digits: article['text'] = article['text'].replace(d,'')
             data.append(article['text'])
             predictions = [prediction['probability'] for prediction in article['prediction']]
             articles.append({
@@ -120,8 +124,8 @@ def pairwise_dists(data, nneighbors=100, folder='model', dist='l2'):
     nneighbors  number of closest neighbors to include in distance list
 
     '''
-
-    stops = map(lambda x:x.lower().strip(),open(folder+'/stopwords.txt').readlines()[6:])
+    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[5:]
+    stops = map(lambda x:x.lower().strip(),stopwords)
 
     # using now stopwords and filtering out digits
     bow = TfidfVectorizer(min_df=2,stop_words=stops)
@@ -194,7 +198,7 @@ def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
     clusters = []
     for icluster in range(nclusters):
         nmembers = (Xc==icluster).sum()
-        if nmembers < len(data) / 5.0 and nmembers > 1: # only group clusters big enough but not too big
+        if True:#nmembers < len(data) / 5.0 and nmembers > 1: # only group clusters big enough but not too big
             members = (Xc==icluster).nonzero()[0]
             topwordidx = array(X[members,:].sum(axis=0))[0].argsort()[-topwhat:][::-1]
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
@@ -231,13 +235,13 @@ def write_distances_json(folder='model'):
             'clusterings': [
                 { 'name': 'prediction', 'clusters': party_cluster(articles) },
                 { 'name': 'kpca_nclusters_30_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=30) },
-                { 'name': 'kpca_nclusters_100_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=100,ncomponents=30) },
-                { 'name': 'kpca_nclusters_30_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=30) },
-                { 'name': 'kpca_nclusters_100_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=30) },
+                { 'name': 'kpca_nclusters_60_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=60,ncomponents=30) },
+                { 'name': 'kpca_nclusters_30_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=30,zscored=False,ncomponents=30) },
+                { 'name': 'kpca_nclusters_60_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=60,zscored=False,ncomponents=30) },
                 { 'name': 'kpca_nclusters_30_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=100) },
-                { 'name': 'kpca_nclusters_100_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=100,ncomponents=100) },
-                { 'name': 'kpca_nclusters_30_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=100) },
-                { 'name': 'kpca_nclusters_100_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=100,zscored=False,ncomponents=100) }
+                { 'name': 'kpca_nclusters_60_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=60,ncomponents=100) },
+                { 'name': 'kpca_nclusters_30_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=30,zscored=False,ncomponents=100) },
+                { 'name': 'kpca_nclusters_60_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=60,zscored=False,ncomponents=100) }
             ]
         }
 
