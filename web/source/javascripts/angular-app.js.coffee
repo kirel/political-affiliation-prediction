@@ -1,4 +1,27 @@
-app = angular.module 'pp', []
+angular.module('data', [])
+  .factory 'Network', ($q, $http) ->
+    $http.get('distances.json').then (response) -> response.data
+
+## fake data
+
+window.article = do ->
+  i = 1
+  ->
+    i = i + 1
+    nums = _.times(4, -> Math.random())
+    sum = _.sum(nums)
+    probs = _.map(nums, (num) -> num/sum)
+    prediction = _.zipWith ["cdu", "spd", "gruene", "linke"], probs, (party, probability) ->
+      party: party
+      probability: probability
+    predictedLabel = _.max(prediction, (p) -> p.probability).party
+
+    title: "Artikel #{i}"
+    url: "http://#{predictedLabel}.de"
+    prediction: prediction
+    predictedLabel: predictedLabel
+
+## utility
 
 subsetsOf2 = (list) ->
   if list.length < 2 then return []
@@ -42,7 +65,6 @@ polygonOffset = (offset, polygon) ->
 
 window.polygonOffset = polygonOffset
 
-
 gaussian = (mean = 0, sigma = 1) -> (x) ->
   gaussianConstant = 1 / Math.sqrt(2 * Math.PI)
   x = (x - mean) / sigma
@@ -51,24 +73,44 @@ gaussian = (mean = 0, sigma = 1) -> (x) ->
 sgn = Math.sign
 sigmoid = (x) -> 1/(1 + Math.E**(-x))
 
-window.article = do ->
-  i = 1
-  ->
-    i = i + 1
-    nums = _.times(4, -> Math.random())
-    sum = _.sum(nums)
-    probs = _.map(nums, (num) -> num/sum)
-    prediction = _.zipWith ["cdu", "spd", "gruene", "linke"], probs, (party, probability) ->
-      party: party
-      probability: probability
-    predictedLabel = _.max(prediction, (p) -> p.probability).party
+## news listing
 
-    title: "Artikel #{i}"
-    url: "http://#{predictedLabel}.de"
-    prediction: prediction
-    predictedLabel: predictedLabel
+app = angular.module 'news', ['data']
 
-app.controller 'Main', ($scope, Network) ->
+app.controller 'newsCtrl', ($scope, Network) ->
+
+  $scope.controls =
+    showGroups: true
+    showLinks: false
+    linkPercentage: 0.05
+
+  Network.then (network) ->
+    $scope.network = network
+    $scope.selectableClusterings = network.clusterings
+    $scope.controls.selectedClustering = _.last($scope.selectableClusterings)
+    $scope.controls.sortRightToLeft = true
+
+  $scope.scoreLeftRight = (index) ->
+    article = $scope.network.articles[index]
+    # calculate left right score from article
+    weights = {linke: -1, gruene: -0.5, spd: 0.5, cdu: 1}
+    _.sum article.prediction.map((p) -> p.probability * weights[p.party])
+
+app.directive 'articlePolitics', ->
+  scope:
+    article: '='
+  template: '''
+    <ul>
+      <li ng-repeat='p in article.prediction' style='width: {{p.probability*100}}%;' class='{{p.party}}'>&nbsp;</li>
+    </ul>
+  '''
+  link: (scope, elem, attr) ->
+
+## Network
+
+app = angular.module 'network', ['data']
+
+app.controller 'networkCtrl', ($scope, Network) ->
 
   $scope.controls =
     showGroups: true
@@ -81,9 +123,6 @@ app.controller 'Main', ($scope, Network) ->
     $scope.selectableClusterings = network.clusterings
     $scope.controls.selectedDistance = _.first($scope.selectableDistances)
     $scope.controls.selectedClustering = _.last($scope.selectableClusterings)
-
-app.factory 'Network', ($q, $http) ->
-  $http.get('distances.json').then (response) -> response.data
 
 app.directive 'networkChart', (Network) ->
   scope:
