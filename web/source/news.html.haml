@@ -1,0 +1,37 @@
+---
+title: Partypredictor Network
+---
+.container(ng-app='news' ng-controller='newsCtrl')
+  %h1 News
+  .row
+    #news-controls
+      %label Clustering
+      %span(ng-repeat='clust in selectableClusterings')
+        %label(for="clustering-{{clust.name}}")
+          %input(type="radio" ng-value="clust" ng-model='controls.selectedClustering' name='clustering' id="clustering-{{clust.name}}")
+          {{clust.name}}
+      %br
+      %label
+        %input(type='checkbox' ng-model='controls.sortRightToLeft')
+        Sort right to left
+
+    #news
+      %ul#news--clusters
+        %li(ng-repeat="cluster in controls.selectedClustering.clusters | orderBy:'members.length':true")
+          %h2 {{cluster.name}}
+          %p.description {{cluster.description}}
+          %ul#news--clusters--articles
+            %li(ng-repeat='memberIndex in cluster.members | orderBy:scoreLeftRight:controls.sortRightToLeft')
+              %article-politics(article='network.articles[memberIndex]')
+              %a(href="{{network.articles[memberIndex].url}}") {{network.articles[memberIndex].title}}
+    -# :markdown
+    -#   Hier ein bisschen Mathe $ \alpha $
+
+-# :javascript
+-#   window.MathJax = {
+-#     tex2jax: {
+-#       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+-#       processEscapes: true
+-#     }
+-#   };
+-# %script(type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML")

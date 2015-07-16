@@ -8,6 +8,7 @@ $spd: #D52326;
 $linke: #BD3476;
 
 @import "network-chart";
+@import "article-politics";
 
 body {
   font: sans-serif;
@@ -28,3 +29,9 @@ svg {
 .arc.spd    path { fill: $spd; }
 .arc.linke  path { fill: $linke; }
 .arc.gruene path { fill: $gruene; }
+
+#news {
+  .description {
+    font-size: 1.2em;
+  }
+}

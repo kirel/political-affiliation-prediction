@@ -1,0 +1,53 @@
+---
+title: Partypredictor
+---
+.container(ng-app='network' ng-controller='networkCtrl')
+  %h1 Netzwerkvisualisierung
+  .row
+    #network-controls
+      %label Distances
+      %span(ng-repeat='dist in selectableDistances')
+        %label(for="distance-{{dist.name}}")
+          %input(type="radio" ng-value="dist" ng-model='controls.selectedDistance' name='distance' id="distance-{{dist.name}}")
+          {{dist.name}}
+      %label(for='show-links')
+        %input#show-links(type='checkbox' ng-model='controls.showLinks')
+        Abstände visualisieren
+      %br
+      %label Clustering
+      %span(ng-repeat='clust in selectableClusterings')
+        %label(for="clustering-{{clust.name}}")
+          %input(type="radio" ng-value="clust" ng-model='controls.selectedClustering' name='clustering' id="clustering-{{clust.name}}")
+          {{clust.name}}
+      %label(for='show-groups')
+        %input#show-groups(type='checkbox' ng-model='controls.showGroups')
+        Cluster visualisieren
+      %label(for='disconnect-groups')
+        %input#disconnect-groups(type='checkbox' ng-model='controls.disconnectGroups')
+        Cluster entkoppeln
+      %label(for='show-voronoi')
+        %input#show-voronoi(type='checkbox' ng-model='controls.showVoronoi')
+        Selektionspolygone visualisieren
+      %input#link-percentage(type='range' min='0' max='1' step='0.01' ng-model='controls.linkPercentage')
+      %label(for='link-percentage')
+        {{controls.linkPercentage}}% Anteil Verbindungen
+      %div
+        {{article.title}}
+        —
+        {{article.cluster.name}}
+        —
+        {{article.cluster.description}}
+    #network
+      %network-chart(network='network' selected-distance='controls.selectedDistance' selected-clustering='controls.selectedClustering' show-links='controls.showLinks' show-groups='controls.showGroups' disconnect-groups='controls.disconnectGroups' show-voronoi='controls.showVoronoi' link-percentage='controls.linkPercentage' selected-article='article')
+
+    -# :markdown
+    -#   Hier ein bisschen Mathe $ \alpha $
+
+-# :javascript
+-#   window.MathJax = {
+-#     tex2jax: {
+-#       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+-#       processEscapes: true
+-#     }
+-#   };
+-# %script(type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML")
