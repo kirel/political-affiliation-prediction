@@ -16,12 +16,11 @@ title: Partypredictor Network
         Sort right to left
 
     #news
-      %ul
+      %ul#news--clusters
         %li(ng-repeat="cluster in controls.selectedClustering.clusters | orderBy:'members.length':true")
-          {{cluster.name}}
-          –
-          {{cluster.description}}
-          %ul
+          %h2 {{cluster.name}}
+          %p.description {{cluster.description}}
+          %ul#news--clusters--articles
             %li(ng-repeat='memberIndex in cluster.members | orderBy:scoreLeftRight:controls.sortRightToLeft')
               %article-politics(article='network.articles[memberIndex]')
               %a(href="{{network.articles[memberIndex].url}}") {{network.articles[memberIndex].title}}

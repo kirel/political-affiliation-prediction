@@ -29,3 +29,9 @@ svg {
 .arc.spd    path { fill: $spd; }
 .arc.linke  path { fill: $linke; }
 .arc.gruene path { fill: $gruene; }
+
+#news {
+  .description {
+    font-size: 1.2em;
+  }
+}
