@@ -87,7 +87,7 @@ app.controller 'newsCtrl', ($scope, Network) ->
   Network.then (network) ->
     $scope.network = network
     $scope.selectableClusterings = network.clusterings
-    $scope.controls.selectedClustering = _.last($scope.selectableClusterings)
+    $scope.controls.selectedClustering = _.first($scope.selectableClusterings)
     $scope.controls.sortRightToLeft = true
 
   $scope.scoreLeftRight = (index) ->
