@@ -77,6 +77,12 @@ The results are stored in a `distances-xxx.json` file, but also in `web/source/d
 
 # Deployment
 
+First build the web project
+
+    cd web && dotenv bundle exec middleman build
+
+The build the container
+
     docker build -t kirel/political-affiliation-prediction .
     docker push kirel/political-affiliation-prediction
 
