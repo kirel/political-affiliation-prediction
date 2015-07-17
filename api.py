@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import os
-app = Flask(__name__)
+app = Flask(__name__, static_folder='web/build')
 
 from classifier import Classifier
 # from downloader import Downloader
@@ -24,11 +24,11 @@ def fetch_url(url):
 
     return title,text
 
-@app.route("/")
-def root():
+@app.route("/api")
+def api():
     return jsonify(dict(message='political affiliation prediction api', version=VERSION))
 
-@app.route("/predict", methods=['POST'])
+@app.route("/api/predict", methods=['POST'])
 def predict():
     if request.form.has_key('url'):
         url = request.form['url']
@@ -37,6 +37,17 @@ def predict():
     else:
         text = request.form['text']
         return jsonify(classifier.predict(text))
+
+# static files from web/build
+
+@app.route('/')
+def root():
+  return app.send_static_file('index.html')
+
+@app.route('/<path:path>')
+def static_proxy(path):
+  # send_static_file will guess the correct MIME type
+  return app.send_static_file(path)
 
 if __name__ == "__main__":
     port = 5000
