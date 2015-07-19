@@ -12,6 +12,22 @@ from readability.readability import Document
 DEBUG = os.environ.get('DEBUG') != None
 VERSION = 0.1
 
+### news regeneration
+
+from apscheduler.schedulers.background import BackgroundScheduler
+
+scheduler = BackgroundScheduler()
+
+@scheduler.scheduled_job(trigger='cron', minute='0,30')
+def fetch_news_job():
+  # TODO really fetch news
+
+@scheduler.scheduled_job(trigger='cron', hour='3')
+def retrain_classifier_job():
+  # TODO really fetch new bundestag data and retrain classifier
+
+### API
+
 @retry(stop_max_attempt_number=5)
 def fetch_url(url):
     '''
@@ -55,4 +71,5 @@ if __name__ == "__main__":
     # Open a web browser pointing at the app.
     # os.system("open http://localhost:{0}".format(port))
 
+    scheduler.start()
     app.run(host='0.0.0.0', port = port, debug = DEBUG)
