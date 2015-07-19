@@ -38,7 +38,7 @@ def optimize_bow(folder='model'):
         print 'Trying %s'%'_'.join(sorted(trysteps))
         test_with_nested_CV(folder=folder,steps=trysteps)
 
-def test_with_nested_CV(folder='model',folds=3, plot=False, steps=['hashing']):
+def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfidf']):
     '''
     
     Evaluates the classifer by doing nested CV 
@@ -108,7 +108,7 @@ def test_with_nested_CV(folder='model',folds=3, plot=False, steps=['hashing']):
     open(folder+'/report_%s.txt'%'_'.join(sorted(steps)),'wb').write(report)
     print(report)
     conf_mat = metrics.confusion_matrix(Y,predicted)
-    open(folder+'/conf_mat_%s.txt'%'_'.join(sorted(steps)),'wb').write(conf_mat)
+    open(folder+'/conf_mat_%s.txt'%'_'.join(sorted(steps)),'wb').write(json.dumps(conf_mat.tolist()))
     print(conf_mat)
     
     if plot:

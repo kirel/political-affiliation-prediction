@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
+from scipy import unique,ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
@@ -46,7 +46,16 @@ def get_files(url='https://www.bundestag.de/plenarprotokolle', \
             req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
             fh.write(urllib2.urlopen(req).read())
             fh.close()
-        
+
+def clean(txt, folder='model'):
+    # names of abgeordnete
+    abgeordnete = codecs.open('model/abgeordnete.txt',encoding='utf-8').readlines()
+    names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')])
+    for name in names:
+        txt = re.sub(r'\b%s\b'%name,' ',txt)
+
+    return txt
+
 def partyparse(folder='model', suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
                 {'name':'spd','searchpattern':'SPD'},\
@@ -63,7 +72,7 @@ def partyparse(folder='model', suffix='-data.txt', \
     parties list of substrings of parties to look for (had issues with umlauts of gruenen)
     '''
     import os
-    
+
     # a file handle to store the speech preamble, serving as label 
     # check for existing file and remove if found
     if os.path.isfile(folder+'/textdata/speech_labels.txt'):
@@ -79,9 +88,13 @@ def partyparse(folder='model', suffix='-data.txt', \
     print 'Parsing %d files'%len(files) 
     # go through files
     for f in files:
+        print "Parsing %s (%d/%d)"%(f,files.index(f),len(files))
         fh = codecs.open(f,'r','latin_1')
         txt = fh.read()
         fh.close() 
+        # first get rid of the 'anlagen'
+        endOfTranscript = txt.find('die sitzung ist geschlossen')
+        txt = txt[:endOfTranscript]
         # each speech is preceded by a pattern like "speaker (partyname):"
         # we simply look for '():'
         party = re.findall("\([^\(^\)]*\):",txt)
@@ -96,7 +109,7 @@ def partyparse(folder='model', suffix='-data.txt', \
                 if pa['searchpattern'].decode('utf-8').lower() in party[txtidx].lower():
                     foundparty = pa['name']
                     pa['name']
-                    data[pa['name']].append(text[txtidx+1].lower())
+                    data[pa['name']].append(clean(text[txtidx+1].lower(),folder=folder))
             # write out which party was found for this speech
             speechlabelsfh.write('%s:%s\n'%(party[txtidx],foundparty))   
     # store the preamble-party associations

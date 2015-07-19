@@ -11,7 +11,7 @@ import cPickle
 import codecs
 import itertools
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
+from scipy import triu,ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 
 def get_news(sources=['spiegel','faz','welt','zeit'], folder='model'):
     '''
@@ -158,7 +158,7 @@ def pairwise_dists(data, nneighbors=10, folder='model', dist='l2'):
 
     return distances
 
-def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
+def kpca_cluster(data,nclusters=100,ncomponents=40,topwhat=10,zscored=False):
     '''
 
     Computes clustering of bag-of-words vectors of articles
@@ -202,12 +202,14 @@ def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
             members = (Xc==icluster).nonzero()[0]
             topwordidx = array(X[members,:].sum(axis=0))[0].argsort()[-topwhat:][::-1]
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
-            print 'Cluster %d'%icluster + ' %d members'%nmembers + '\n\t'+topwords
-
+            meanDist = triu(pairwise_distances(X[members,:],metric='l2',n_jobs=1)).sum()
+            meanDist = meanDist / (len(members) + (len(members)**2 - len(members))/2.0)
+            print 'Cluster %d'%icluster + ' %d members'%nmembers + ' mean Distance %f'%meanDist + '\n\t'+topwords
             clusters.append({
                 'name':'Cluster-%d'%icluster,
                 'description': topwords,
-                'members': list(members)
+                'members': list(members),
+                'meanL2Distances': meanDist
                 })
 
     return clusters
@@ -226,7 +228,7 @@ def party_cluster(articles):
 
 def write_distances_json(folder='model'):
     articles, data = all_saved_news(folder)
-    dists = ['l2','l1','l2_kpca','l2_kpca_zscore']
+    dists = ['l2_kpca']
     distances_json = {
             'articles': articles,
             'distances': [
@@ -234,14 +236,7 @@ def write_distances_json(folder='model'):
             ],
             'clusterings': [
                 { 'name': 'prediction', 'clusters': party_cluster(articles) },
-                { 'name': 'kpca_nclusters_30_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=30) },
-                { 'name': 'kpca_nclusters_60_ncomponents_30_zscored', 'clusters': kpca_cluster(data,nclusters=60,ncomponents=30) },
-                { 'name': 'kpca_nclusters_30_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=30,zscored=False,ncomponents=30) },
-                { 'name': 'kpca_nclusters_60_ncomponents_30', 'clusters': kpca_cluster(data,nclusters=60,zscored=False,ncomponents=30) },
-                { 'name': 'kpca_nclusters_30_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=30,ncomponents=100) },
-                { 'name': 'kpca_nclusters_60_ncomponents_100_zscored', 'clusters': kpca_cluster(data,nclusters=60,ncomponents=100) },
-                { 'name': 'kpca_nclusters_30_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=30,zscored=False,ncomponents=100) },
-                { 'name': 'kpca_nclusters_60_ncomponents_100', 'clusters': kpca_cluster(data,nclusters=60,zscored=False,ncomponents=100) }
+                { 'name': 'kpca_nclusters_60_ncomponents_40', 'clusters': kpca_cluster(data,nclusters=len(articles)/2,ncomponents=40,zscored=False) },
             ]
         }
 

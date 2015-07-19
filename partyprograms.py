@@ -73,7 +73,7 @@ def partyprograms(folder='model'):
         Ytrue.extend(ones(len(text[key]))*text.keys().index(key))
         
     print(confusion_matrix(Ytrue,Yhat))
-    print(classification_report(Ytrue,Yhat))
+    print(classification_report(Ytrue,Yhat,target_names=text.keys()))
 
     json.dump(predictions,open(folder+'/textdata/predictions.json','wb'),ensure_ascii=False)
     json.dump(predictions_total,open(folder+'/textdata/predictions_total.json','wb'),ensure_ascii=False)

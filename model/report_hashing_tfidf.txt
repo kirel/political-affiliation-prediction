@@ -1,9 +1,9 @@
-Wallclock time: 977.739735 sec
+Wallclock time: 22997.514887 sec
 Vocabulary size: 1048576
              precision    recall  f1-score   support
 
-      linke       0.85      0.70      0.77      2019
-     gruene       0.78      0.85      0.82      2574
+      linke       0.86      0.72      0.78      2019
+     gruene       0.79      0.85      0.82      2574
         spd       0.90      0.76      0.82      2199
         cdu       0.79      0.91      0.85      3228
 
