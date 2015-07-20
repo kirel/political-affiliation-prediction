@@ -11,7 +11,7 @@ import cPickle
 import codecs
 import itertools
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy import triu,ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
+from scipy import double,triu,ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 
 def get_news(sources=['spiegel','faz','welt','zeit'], folder='model'):
     '''
@@ -158,6 +158,45 @@ def pairwise_dists(data, nneighbors=10, folder='model', dist='l2'):
 
     return distances
 
+def load_sentiment(negative='model/textdata/SentiWS_v1.8c/SentiWS_v1.8c_Negative.txt',\
+        positive='model/textdata/SentiWS_v1.8c/SentiWS_v1.8c_Positive.txt'):
+    words = dict()
+    for line in open(negative).readlines():
+        parts = line.strip('\n').split('\t')
+        words[parts[0].split('|')[0]] = double(parts[1])
+        if len(parts)>2:
+            for inflection in parts[2].strip('\n').split(','):
+                words[inflection] = double(parts[1])
+    
+    for line in open(positive).readlines():
+        parts = line.strip('\n').split('\t')
+        words[parts[0].split('|')[0]] = double(parts[1])
+        if len(parts)>2:
+            for inflection in parts[2].strip('\n').split(','):
+                words[inflection] = double(parts[1])
+   
+    return words
+
+def get_sentiments(articles,data):
+    
+    # filtering out some noise words
+    stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
+
+    # vectorize non-stopwords 
+    bow = TfidfVectorizer(min_df=2,stop_words=stops)
+    X = bow.fit_transform(data)
+
+    # map sentiment vector to bow space
+    words = load_sentiment()
+    sentiment_vec = zeros(X.shape[1])
+    for key in words.keys():
+        if bow.vocabulary_.has_key(key):
+            sentiment_vec[bow.vocabulary_[key]] = words[key]
+    
+    # compute sentiments 
+    return X.dot(sentiment_vec)
+
+
 def kpca_cluster(data,nclusters=100,ncomponents=40,topwhat=10,zscored=False):
     '''
 
@@ -231,6 +270,7 @@ def write_distances_json(folder='model'):
     dists = ['l2_kpca']
     distances_json = {
             'articles': articles,
+            'sentiments': json.dumps(get_sentiments(articles,data).tolist()),
             'distances': [
                 { 'name': dist, 'distances': pairwise_dists(data,dist = dist) } for dist in dists
             ],
