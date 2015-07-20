@@ -14,7 +14,7 @@ from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
 
-def get_files(url='https://www.bundestag.de/plenarprotokolle', \
+def get_new_files(url='https://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \
                 suffix='-data.txt'):
     '''
@@ -36,27 +36,35 @@ def get_files(url='https://www.bundestag.de/plenarprotokolle', \
     soup = BeautifulSoup(html)
     # get the links
     list_urls = soup.find_all('a')
+    new_urls = []
     # look for the suffix links and download the files
     for url in list_urls:
         if url.has_attr('href') and url['href'].find(suffix) > 0:
             remotefn = 'http://www.bundestag.de'+url['href']
-            localfn = folder+'/textdata/'+url['href'].split('/')[-1]
-            print 'Downloading %s to %s'%(remotefn,localfn)
-            fh = open(localfn,'wb')
-            req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
-            fh.write(urllib2.urlopen(req).read())
-            fh.close()
+            localfn = folder + '/' + url['href'].split('/')[-1]
+            if not os.path.isfile(localfn):
+                print 'Found new file, downloading: %s'%remotefn
+                print 'Downloading %s to %s'%(remotefn,localfn)
+                fh = open(localfn,'wb')
+                req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
+                fh.write(urllib2.urlopen(req).read())
+                fh.close()
+                new_urls.append(localfn)
+    return new_urls
 
 def clean(txt, folder='model'):
     # names of abgeordnete
     abgeordnete = codecs.open('model/abgeordnete.txt',encoding='utf-8').readlines()
     names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')])
+    # remove applaus (too easy indicator of party affiliation)
+    txt = re.sub('\(beifall[^\(]{1,100}\)',' ',txt)
+    txt = re.sub('\(zurufe[^\(]{1,100}\)',' ',txt)
     for name in names:
         txt = re.sub(r'\b%s\b'%name,' ',txt)
 
     return txt
 
-def partyparse(folder='model', suffix='-data.txt', \
+def partyparse_update(folder='model', suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
                 {'name':'spd','searchpattern':'SPD'},\
                 {'name':'gruene','searchpattern':'90/DIE'},\
@@ -71,21 +79,22 @@ def partyparse(folder='model', suffix='-data.txt', \
     suffix  
     parties list of substrings of parties to look for (had issues with umlauts of gruenen)
     '''
-    import os
 
-    # a file handle to store the speech preamble, serving as label 
-    # check for existing file and remove if found
-    if os.path.isfile(folder+'/textdata/speech_labels.txt'):
-        os.remove(folder+'/textdata/speech_labels.txt')
-    
-    speechlabelsfh = codecs.open(folder+'/textdata/speech_labels.txt','wb',encoding='latin_1')
-    speechlabelsfh.write('String|Party\n')
-    
     # find all files with suffix
-    files = glob.glob(folder+'/textdata/*'+suffix)
+    files = get_new_files(folder=folder+'/textdata',suffix=suffix)
+    
+    # if there is no new data, quit
+    if len(files)==0: return
 
-    data = {x['name']:[] for x in parties}
-    print 'Parsing %d files'%len(files) 
+    datafn = folder+'/textdata/rawtext.pickle'
+    if os.path.isfile(datafn):
+        print 'Loading rawtext file from %s'%datafn
+        data = cPickle.load(open(datafn))
+    else: 
+        print 'Starting with empty rawtext file'
+        data = {x['name']:[] for x in parties}
+
+    print 'Parsing %d new files'%len(files) 
     # go through files
     for f in files:
         print "Parsing %s (%d/%d)"%(f,files.index(f),len(files))
@@ -102,22 +111,19 @@ def partyparse(folder='model', suffix='-data.txt', \
 
         for txtidx in range(len(party)):
             # look for party in this text-preamble
-            foundparty = '-'
+            partycount = zeros(len(parties))
             for pa in parties:
                 # if we find a party-substring in this preamble
                 # take the speech to be of that party and store the label
                 if pa['searchpattern'].decode('utf-8').lower() in party[txtidx].lower():
-                    foundparty = pa['name']
-                    pa['name']
                     data[pa['name']].append(clean(text[txtidx+1].lower(),folder=folder))
-            # write out which party was found for this speech
-            speechlabelsfh.write('%s:%s\n'%(party[txtidx],foundparty))   
-    # store the preamble-party associations
-    speechlabelsfh.close()
+    
+    for idx in range(len(parties)):
+        print 'Found %d speeches for party %s'(partycount[idx],parties[idx]['name'])
+    
     # store the data
-    fn = folder+'/textdata/rawtext.pickle'
-    print 'Saving raw text to %s'%fn
-    cPickle.dump(data,open(fn,'wb'),-1)
+    print 'Saving raw text to %s'%datafn
+    cPickle.dump(data,open(datafn,'wb'),-1)
 
 def txt2BoW(folder='model'):
     '''
@@ -148,9 +154,7 @@ if __name__ == "__main__":
     parser.add_argument('-f','--folder',help='Folder to store text files [./textdata]',\
         default='model')
 
-    parser.add_argument('-d','--download',help='If files should be downloaded',\
-            action='store_true', default=False)
-    parser.add_argument('-p','--parse',help='If files should be parsed into different parties',\
+    parser.add_argument('-p','--parse',help='If new files should be downloaded and parsed into different parties',\
             action='store_true', default=False)
     parser.add_argument('-t','--transform',help='If texts should be bag-of-word transformed',\
             action='store_true', default=False)
@@ -158,9 +162,7 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     if not os.path.isdir(args['folder']):
         os.mkdir(args['folder']) 
-    if args['download']:
-        get_files(folder=args['folder'],suffix=args['suffix'],url=args['url'])
     if args['parse']:
-        partyparse(folder=args['folder'],suffix=args['suffix']) 
+        partyparse_update(folder=args['folder'],suffix=args['suffix']) 
     if args['transform']:
         txt2BoW(folder=args['folder'])

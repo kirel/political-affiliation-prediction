@@ -97,7 +97,7 @@ class Classifier:
         # the regularizer
         parameters = {'C': (10.**arange(-5,5,1.)).tolist()}
         # perform gridsearch to get the best regularizer
-        gs_clf = GridSearchCV(text_clf, parameters, cv=folds)
+        gs_clf = GridSearchCV(text_clf, parameters, cv=folds, n_jobs=-1)
         gs_clf.fit(X,Y)
         print metrics.classification_report(Y,gs_clf.predict(X),target_names=data.keys())
         # dump classifier to pickle
