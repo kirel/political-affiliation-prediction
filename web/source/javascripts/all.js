@@ -66,7 +66,7 @@ $(function () {
   d3.select('#submit_text').on('click', function() {
       var text = d3.select('#text_query').node().value;
       console.log(text);
-      d3.json('/predict')
+      d3.json('/api/predict')
           .header("Content-Type", "application/x-www-form-urlencoded")
           .post("text="+text, function(error, data) {
               console.log(data)
@@ -82,7 +82,7 @@ $(function () {
   d3.select('#submit_url').on('click', function() {
       var text = d3.select('#url_query').node().value;
       console.log(text)
-      d3.json('/predict')
+      d3.json('/api/predict')
           .header("Content-Type", "application/x-www-form-urlencoded")
           .post("url="+text, function(error, data) {
               console.log(data)
