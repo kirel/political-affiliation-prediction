@@ -44,7 +44,7 @@ REMARK: The frontend needs the backend running!
 
 In order to train a classifier we download, parse and Bag-of-word transform the speeches and discussions of the German Bundestag from http://www.bundestag.de/plenarprotokolle'
 
-    python downloader.py --download --parse --transform
+    python downloader.py --parse --transform
 
 ## Retrain classifier
 
