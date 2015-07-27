@@ -14,7 +14,7 @@ from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
 
-def get_new_files(url='https://www.bundestag.de/plenarprotokolle', \
+def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \
                 suffix='-data.txt'):
     '''
@@ -47,22 +47,41 @@ def get_new_files(url='https://www.bundestag.de/plenarprotokolle', \
                 print 'Downloading %s to %s'%(remotefn,localfn)
                 fh = open(localfn,'wb')
                 req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
-                fh.write(urllib2.urlopen(req).read())
+                
+                try:
+                    txt = urllib2.urlopen(req).read()
+                    txt = txt.decode('utf8')
+                    fh.write(txt)
+                except:
+                    txt = urllib2.urlopen(req).read()
+                    txt = txt.decode('latin1').encode('utf8')
+                    fh.write(txt)
                 fh.close()
-                new_urls.append(localfn)
+            
+            new_urls.append(localfn)
+
     return new_urls
 
-def clean(txt, folder='model'):
+def clean(txt, folder='model', stopwords=[]):
+    # remove applaus (too easy indicator of party affiliation)
+    txt = re.sub(r'\(beifall[^\(]{1,100}\)',' ',txt)
+    txt = re.sub(r'\(zurufe[^\(]{1,100}\)',' ',txt)
+    rx = re.compile(u'[\W_^0-9]+', re.UNICODE)
+    txt = ' '.join(map(lambda x: rx.sub(' ', x).strip(),txt.split(' ')))
+    for name in stopwords:
+        rn = re.compile(r'\b%s\b'%name, re.UNICODE)
+        txt = rn.sub(' ', txt)
+    txt = ' '.join(txt.split())
+    return txt
+
+def get_stops(folder='model'):
+    # generic stopwords
+    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[10:]
+    stops = map(lambda x:x.lower().strip(),stopwords)
     # names of abgeordnete
     abgeordnete = codecs.open('model/abgeordnete.txt',encoding='utf-8').readlines()
-    names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')])
-    # remove applaus (too easy indicator of party affiliation)
-    txt = re.sub('\(beifall[^\(]{1,100}\)',' ',txt)
-    txt = re.sub('\(zurufe[^\(]{1,100}\)',' ',txt)
-    for name in names:
-        txt = re.sub(r'\b%s\b'%name,' ',txt)
-
-    return txt
+    names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
+    return stops + names
 
 def partyparse_update(folder='model', suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
@@ -81,45 +100,57 @@ def partyparse_update(folder='model', suffix='-data.txt', \
     '''
 
     # find all files with suffix
-    files = get_new_files(folder=folder+'/textdata',suffix=suffix)
+    files = get_speech_files(folder=folder+'/textdata',suffix=suffix)
     
     # if there is no new data, quit
     if len(files)==0: return
 
     datafn = folder+'/textdata/rawtext.pickle'
-    if os.path.isfile(datafn):
-        print 'Loading rawtext file from %s'%datafn
-        data = cPickle.load(open(datafn))
-    else: 
-        print 'Starting with empty rawtext file'
-        data = {x['name']:[] for x in parties}
 
-    print 'Parsing %d new files'%len(files) 
+    data = {x['name']:[] for x in parties}
+
+    # get stopwords
+    stops = get_stops(folder=folder)
+
+    print 'Processing %d files'%len(files) 
     # go through files
     for f in files:
-        print "Parsing %s (%d/%d)"%(f,files.index(f),len(files))
-        fh = codecs.open(f,'r','latin_1')
-        txt = fh.read()
-        fh.close() 
-        # first get rid of the 'anlagen'
-        endOfTranscript = txt.find('die sitzung ist geschlossen')
-        txt = txt[:endOfTranscript]
-        # each speech is preceded by a pattern like "speaker (partyname):"
-        # we simply look for '():'
-        party = re.findall("\([^\(^\)]*\):",txt)
-        text = re.split("\([^\(^\)]*\):",txt)
+        fn_parsed = f[:-4] + "_parsed.json"
+        
+        if os.path.isfile(fn_parsed):
+            thisdata = json.loads(codecs.open(fn_parsed,'r','utf-8').read())
+            print "Read parsed file %s"%fn_parsed
+        else:
+            print "Parsing %s (%d/%d)"%(f,files.index(f)+1,len(files))
+            fh = codecs.open(f,'r', encoding='utf-8', errors='ignore')
+            txt = fh.read()
+            fh.close() 
+            # first get rid of the 'anlagen'
+            endOfTranscript = txt.find('die sitzung ist geschlossen')
+            txt = txt[:endOfTranscript]
+            # each speech is preceded by a pattern like "speaker (partyname):"
+            # we simply look for '():'
+            party = re.findall("\([^\(^\)]*\):",txt)
+            text = re.split("\([^\(^\)]*\):",txt)
+            
+            thisdata = {x['name']:[] for x in parties}
+            for txtidx in range(len(party)):
+                # look for party in this text-preamble
+                for pa in parties:
+                    # if we find a party-substring in this preamble
+                    # take the speech to be of that party and store the label
+                    if pa['searchpattern'].decode('utf-8').lower() in party[txtidx].lower():
+                        thisdata[pa['name']].append(clean(text[txtidx+1].lower(),folder=folder,stopwords=stops))
+            
+            print "Storing parsed data in %s"%fn_parsed
+            open(fn_parsed,'wb').write(json.dumps(thisdata, ensure_ascii=False).encode('utf8'))
 
-        for txtidx in range(len(party)):
-            # look for party in this text-preamble
-            partycount = zeros(len(parties))
-            for pa in parties:
-                # if we find a party-substring in this preamble
-                # take the speech to be of that party and store the label
-                if pa['searchpattern'].decode('utf-8').lower() in party[txtidx].lower():
-                    data[pa['name']].append(clean(text[txtidx+1].lower(),folder=folder))
-    
+        print "Attaching data to speech collection"
+        for pa in parties:
+            data[pa['name']] += thisdata[pa['name']]
+
     for idx in range(len(parties)):
-        print 'Found %d speeches for party %s'(partycount[idx],parties[idx]['name'])
+        print 'Found %d speeches for party %s'%(len(data[parties[idx]['name']]),parties[idx]['name'])
     
     # store the data
     print 'Saving raw text to %s'%datafn

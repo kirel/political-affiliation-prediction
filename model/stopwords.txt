@@ -4,7 +4,24 @@
 ; LAST UPDATE 15. Jan 2011
 ; Besucht doch mal: www.solariz.de
 ; Quell Link: http://solariz.de/649/deutsche-stopwords.htm
+liebe
+kolleginnen
+kollegen
+bisherigen
+rednerinnen
+redner
+dr
+bundeskanzlerin
+bundeskanzler
+herrn
+herren
+damen
+herr
+präsident
+ministerpräsident
 bild
+linken
+cducsu
 themeurl
 themename
 teasers

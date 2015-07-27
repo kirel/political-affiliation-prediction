@@ -5,6 +5,7 @@ import cPickle
 from bs4 import BeautifulSoup
 import json
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d, corrcoef, array
@@ -18,6 +19,9 @@ from sklearn import metrics
 from classifier import *
 from sklearn.preprocessing import LabelBinarizer
 from vectorizer import Vectorizer
+from newsreader import load_sentiment
+import codecs
+from itertools import chain
 
 def optimize_bow(folder='model'):
     steps = [['stemming','trigrams','tfidf'],\
@@ -126,21 +130,47 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfi
         pylab.savefig(folder+'/conf_mat.pdf',bbox_inches='tight')
 
 def word_party_correlations(folder='model'):
-    # load data
-    data = cPickle.load(open(folder+'/BoW.pickle'))
+    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[5:]
+    stops = map(lambda x:x.lower().strip(),stopwords)
+
+    # using now stopwords and filtering out digits
+    bow = TfidfVectorizer(min_df=2)
+    datafn = folder+'/textdata/rawtext.pickle'
+    data = cPickle.load(open(datafn))
+    bow = bow.fit(chain.from_iterable(data.values()))
+
     # create numerical labels
-    Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
+    Y = hstack(map((lambda x: ones(len(data[data.keys()[x]]))*x),range(len(data))))
+    
     # create data matrix
+    for key in data.keys():
+        data[key] = bow.transform(data[key])
+    
     X = vstack(data.values())
     
-    # load BoW vectorizers
-    vctpickle = cPickle.load(open(folder+'/BoW_transformer.pickle'))
-    vct = vctpickle['count_vectorizer']
+    # map sentiment vector to bow space
+    words = load_sentiment()
+    sentiment_vec = zeros(X.shape[1])
+    for key in words.keys():
+        if bow.vocabulary_.has_key(key):
+            sentiment_vec[bow.vocabulary_[key]] = words[key]
+ 
+    # do sentiment analysis
+    sentiments = X.dot(sentiment_vec)    
 
     # compute label-BoW-tfidf-feature correlation
     lb = LabelBinarizer()
     partylabels = zscore(lb.fit_transform(Y),axis=0)
-    wordidx2word = dict(zip(vct.vocabulary_.values(),vct.vocabulary_.keys()))
+    # sentiment  vs party correlation
+    sentVsParty = corrcoef(partylabels.T,sentiments)[-1,:-1]
+    fn = folder+'/sentiment_vs_party.json'
+    
+    for key in range(len(data.keys())):
+        print "Sentiment vs Party %s: %0.2f"%(data.keys()[key],sentVsParty[key])
+    
+    json.dump(dict(zip(data.keys(),sentVsParty)),open(fn,'wb'))
+ 
+    wordidx2word = dict(zip(bow.vocabulary_.values(),bow.vocabulary_.keys()))
     allcors = dict(zip(data.keys(),[[]]*len(data.keys())))
     # this is extremely cumbersome and slow, ...
     # but computing the correlations naively on the matrices

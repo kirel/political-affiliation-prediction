@@ -90,13 +90,13 @@ def get_news(sources=['spiegel','faz','welt','zeit'], folder='model'):
 
     # save results
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news))
+    open(folder+'/news-%s'%(datestr) + '.json', 'wb').write(json.dumps(news,ensure_ascii=False).encode('utf8'))
 
 def all_saved_news(folder='model'):
     import glob
     from string import digits
     # get just the most recent news articles file (assuming date label ordering)
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1]))
+    news = json.load(open(glob.glob(folder+'/news*.json')[-1],"r","utf-8"))
     # collect text data from all articles
     articles, data = [], []
     for source in news.keys():
@@ -124,7 +124,7 @@ def pairwise_dists(data, nneighbors=10, folder='model', dist='l2'):
     nneighbors  number of closest neighbors to include in distance list
 
     '''
-    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[5:]
+    stopwords = codecs.open(folder+"/stopwords.txt", "r", encoding="utf-8", errors='ignore').readlines()[5:]
     stops = map(lambda x:x.lower().strip(),stopwords)
 
     # using now stopwords and filtering out digits
@@ -158,8 +158,8 @@ def pairwise_dists(data, nneighbors=10, folder='model', dist='l2'):
 
     return distances
 
-def load_sentiment(negative='model/textdata/SentiWS_v1.8c/SentiWS_v1.8c_Negative.txt',\
-        positive='model/textdata/SentiWS_v1.8c/SentiWS_v1.8c_Positive.txt'):
+def load_sentiment(negative='SentiWS_v1.8c/SentiWS_v1.8c_Negative.txt',\
+        positive='SentiWS_v1.8c/SentiWS_v1.8c_Positive.txt'):
     words = dict()
     for line in open(negative).readlines():
         parts = line.strip('\n').split('\t')
@@ -177,7 +177,7 @@ def load_sentiment(negative='model/textdata/SentiWS_v1.8c/SentiWS_v1.8c_Negative
    
     return words
 
-def get_sentiments(articles,data):
+def get_sentiments(data):
     
     # filtering out some noise words
     stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
