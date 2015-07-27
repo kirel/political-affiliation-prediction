@@ -170,7 +170,7 @@ def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
     '''
     from sklearn.cluster import KMeans
     # filtering out some noise words
-    stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
+    stops = map(lambda x:x.lower().strip(),open('stopwords.txt').readlines()[6:])
 
     # vectorize non-stopwords 
     bow = TfidfVectorizer(min_df=2,stop_words=stops)
