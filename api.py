@@ -1,3 +1,4 @@
+import flask
 from flask import Flask, request, jsonify, render_template
 import os
 app = Flask(__name__, static_folder='web/build')
@@ -53,6 +54,10 @@ def predict():
     else:
         text = request.form['text']
         return jsonify(classifier.predict(text))
+
+@app.route('/api/distances.json')
+def news():
+  return flask.send_from_directory('model', 'distances.json')
 
 # static files from web/build
 

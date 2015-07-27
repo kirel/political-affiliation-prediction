@@ -140,7 +140,7 @@ def pairwise_distance(folder='model',nneighbors=1):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
     # also save that latest version for the visualization
-    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(result))
+    open(folder+'/distances.json', 'wb').write(json.dumps(result))
     
 
 def kpca_cluster(folder='model',nclusters=30,topwhat=10):
@@ -223,7 +223,7 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(result))
     # also save that latest version for the visualization
-    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(result))
+    open(folder+'/distances.json', 'wb').write(json.dumps(result))
     
 def get_files(url='http://www.bundestag.de/plenarprotokolle', \
                 folder='model/textdata', \

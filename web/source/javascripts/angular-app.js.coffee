@@ -1,6 +1,6 @@
 angular.module('data', [])
   .factory 'Network', ($q, $http) ->
-    $http.get('distances.json').then (response) -> response.data
+    $http.get('api/distances.json').then (response) -> response.data
 
 ## fake data
 
