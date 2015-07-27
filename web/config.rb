@@ -37,7 +37,7 @@ use Rack::ReverseProxy do
   reverse_proxy_options preserve_host: true
 
   # Forward the path /test* to http://example.com/test*
-  reverse_proxy '/predict', PAP_API
+  reverse_proxy '/api', PAP_API
 end
 
 ###

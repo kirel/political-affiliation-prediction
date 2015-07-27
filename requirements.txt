@@ -11,3 +11,4 @@ PyStemmer==1.3.0
 Werkzeug==0.10.4
 retrying==1.3.3
 readability-lxml==0.5.1
+apscheduler==3.0.3
