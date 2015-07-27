@@ -19,10 +19,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 scheduler = BackgroundScheduler()
 
+import newsreader
 @scheduler.scheduled_job(trigger='cron', minute='0,30')
 def fetch_news_job():
-  # TODO really fetch news
-  0
+  newsreader.get_news()
+  newsreader.write_distances_json()
 
 @scheduler.scheduled_job(trigger='cron', hour='3')
 def retrain_classifier_job():
