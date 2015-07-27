@@ -12,7 +12,7 @@ $linke: #BD3476;
 
 body {
   font: sans-serif;
-  font-size: 10px;
+  // font-size: 10px;
   background: #FCFCFA;
 }
 
@@ -29,6 +29,18 @@ svg {
 .arc.spd    path { fill: $spd; }
 .arc.linke  path { fill: $linke; }
 .arc.gruene path { fill: $gruene; }
+
+#disclaimer {
+  position: relative;
+  &:before {
+    display: block;
+    font-size: 3em;
+    position: absolute;
+    left: -.4em;
+    top: -.5em;
+    content: '*';
+  }
+}
 
 #news {
   .description {
