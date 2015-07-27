@@ -3,9 +3,10 @@ import json
 import re
 import datetime
 import os
+from io import open
 import urllib2
 import cPickle
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, UnicodeDammit
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import glob
@@ -45,19 +46,16 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
             if not os.path.isfile(localfn):
                 print 'Found new file, downloading: %s'%remotefn
                 print 'Downloading %s to %s'%(remotefn,localfn)
-                fh = open(localfn,'wb')
+                fh = open(localfn,'w', encoding='utf-8')
                 req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
-                
-                try:
-                    txt = urllib2.urlopen(req).read()
-                    txt = txt.decode('utf8')
-                    fh.write(txt)
-                except:
-                    txt = urllib2.urlopen(req).read()
-                    txt = txt.decode('latin1').encode('utf8')
-                    fh.write(txt)
+
+                txt = urllib2.urlopen(req).read()
+                dammit = UnicodeDammit(txt)
+                txt = dammit.unicode_markup
+                fh.write(txt)
+
                 fh.close()
-            
+
             new_urls.append(localfn)
 
     return new_urls
