@@ -1,4 +1,5 @@
 beautifulsoup4==4.3.2
+cchardet==0.3.5
 Flask==0.10.1
 gnureadline==6.3.3
 itsdangerous==0.24

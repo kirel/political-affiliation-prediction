@@ -3,9 +3,10 @@ import json
 import re
 import datetime
 import os
+from io import open
 import urllib2
 import cPickle
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, UnicodeDammit
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import glob
@@ -43,19 +44,16 @@ def download(url='https://www.bundestag.de/plenarprotokolle', \
             remotefn = 'http://www.bundestag.de'+url['href']
             localfn = folder + '/textdata/' + url['href'].split('/')[-1]
             if not os.path.isfile(localfn):
-                print 'Found new file: %s'%remotefn
+                print 'Found new file, downloading: %s'%remotefn
                 print 'Downloading to %s'%localfn
-                fh = open(localfn,'wb')
-                req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})               
+                fh = open(localfn,'w', encoding='utf-8')
+                req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
 
-                try:
-                    txt = urllib2.urlopen(req).read()
-                    txt = txt.decode('utf8')
-                    fh.write(txt)
-                except:
-                    txt = urllib2.urlopen(req).read()
-                    txt = txt.decode('latin1').encode('utf8')
-                    fh.write(txt)
+                txt = urllib2.urlopen(req).read()
+                dammit = UnicodeDammit(txt)
+                txt = dammit.unicode_markup
+                fh.write(txt)
+
                 fh.close()
 
 def clean(txt, folder='model', stopwords=[]):
@@ -174,7 +172,10 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     if not os.path.isdir(args['folder']):
         os.mkdir(args['folder']) 
-    if args['parse']:
-        parse(folder=args['folder'],suffix=args['suffix']) 
+     
     if args['download']:
         download(folder=args['folder'])
+
+    if args['parse']:
+        parse(folder=args['folder'],suffix=args['suffix'])        
+
