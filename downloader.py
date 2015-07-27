@@ -60,18 +60,6 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
 
     return new_urls
 
-def clean(txt, folder='model', stopwords=[]):
-    # remove applaus (too easy indicator of party affiliation)
-    txt = re.sub(r'\(beifall[^\(]{1,100}\)',' ',txt)
-    txt = re.sub(r'\(zurufe[^\(]{1,100}\)',' ',txt)
-    rx = re.compile(u'[\W_^0-9]+', re.UNICODE)
-    txt = ' '.join(map(lambda x: rx.sub(' ', x).strip(),txt.split(' ')))
-    for name in stopwords:
-        rn = re.compile(r'\b%s\b'%name, re.UNICODE)
-        txt = rn.sub(' ', txt)
-    txt = ' '.join(txt.split())
-    return txt
-
 def get_stops(folder='model'):
     # generic stopwords
     stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[10:]
@@ -80,6 +68,21 @@ def get_stops(folder='model'):
     abgeordnete = codecs.open('abgeordnete.txt',encoding='utf-8').readlines()
     names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
     return stops + names
+
+rx_nonword = re.compile(u'[\W_^0-9]+', re.UNICODE)
+stops = get_stops()
+rx_beifall = re.compile(r'\(beifall[^\(]{1,100}\)')
+rx_zurufe = re.compile(r'\(zuruf[^\(]{1,100}\)')
+pre_remove = [rx_beifall, rx_zurufe]
+
+def clean(txt, folder='model', stopwords=[]):
+    # remove applaus (too easy indicator of party affiliation)
+    for rx in pre_remove:
+        txt = rx.sub(' ', txt)
+    tokens = [rx_nonword.sub('', split).strip() for split in txt.split(' ')]
+    tokens_sans_stops = [token for token in tokens if token not in stops]
+    txt = ' '.join(tokens_sans_stops)
+    return txt
 
 def partyparse_update(folder='model', suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
