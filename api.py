@@ -22,10 +22,12 @@ scheduler = BackgroundScheduler()
 @scheduler.scheduled_job(trigger='cron', minute='0,30')
 def fetch_news_job():
   # TODO really fetch news
+  0
 
 @scheduler.scheduled_job(trigger='cron', hour='3')
 def retrain_classifier_job():
   # TODO really fetch new bundestag data and retrain classifier
+  0
 
 ### API
 
