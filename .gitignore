@@ -1,6 +1,8 @@
 model/textdata
 model/**/*.pickle
 
+*.swp
+
 .ipynb_checkpoints
 
 # Byte-compiled / optimized / DLL files
