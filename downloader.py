@@ -121,7 +121,7 @@ def pairwise_distance(folder='model',nneighbors=1):
     # a bag-of-words transformer 
     
     # worked a bit on more stopwords - mainly filtering out html related noise
-    stops = map(lambda x:x.lower().strip(),open(folder+'/stopwords.txt').readlines()[6:])
+    stops = map(lambda x:x.lower().strip(),open('stopwords.txt').readlines()[6:])
 
     # using now stopwords and filtering out digits
     bow = TfidfVectorizer(min_df=2,stop_words=stops)
@@ -176,7 +176,7 @@ def kpca_cluster(folder='model',nclusters=30,topwhat=10):
     # a bag-of-words transformer 
 
     # worked a bit on more stopwords - mainly filtering out html related noise
-    stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
+    stops = map(lambda x:x.lower().strip(),open('stopwords.txt').readlines()[6:])
 
     # vectorize non-stopwords 
     bow = TfidfVectorizer(min_df=2,stop_words=stops)

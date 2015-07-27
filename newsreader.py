@@ -124,7 +124,7 @@ def pairwise_dists(data, nneighbors=100, folder='model', dist='l2'):
     nneighbors  number of closest neighbors to include in distance list
 
     '''
-    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[5:]
+    stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[5:]
     stops = map(lambda x:x.lower().strip(),stopwords)
 
     # using now stopwords and filtering out digits
