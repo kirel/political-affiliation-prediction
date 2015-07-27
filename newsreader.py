@@ -134,13 +134,13 @@ def pairwise_dists(data, nneighbors=100, folder='model', dist='l2'):
     # KPCA transform bow vectors
     if dist is 'l2_kpca_zscore':
         K = pairwise_distances(X,metric='l2',n_jobs=1)
-        perc = 100./len(data)
+        perc = 50#100./len(data)
         width = percentile(K.flatten(),perc)
         Xc = zscore(KernelPCA(n_components=50,kernel='rbf',gamma=width).fit_transform(X))
         K = pairwise_distances(Xc,metric='l2',n_jobs=1)
     elif dist is 'l2_kpca':
         K = pairwise_distances(X,metric='l2',n_jobs=1)
-        perc = 100./len(data)
+        perc = 50#100./len(data)
         width = percentile(K.flatten(),perc)
         Xc = KernelPCA(n_components=50,kernel='rbf',gamma=width).fit_transform(X)
         K = pairwise_distances(Xc,metric='l2',n_jobs=1)
@@ -182,7 +182,7 @@ def kpca_cluster(data,nclusters=100,ncomponents=50,topwhat=10,zscored=True):
     # using now stopwords and filtering out digits
     print 'Computing pairwise distances' 
     K = pairwise_distances(X,metric='l2',n_jobs=1)
-    perc = 100./len(data)
+    perc = 50#100./len(data)
     width = percentile(K.flatten(),perc)
 
     # KPCA transform bow vectors
