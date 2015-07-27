@@ -124,7 +124,7 @@ def pairwise_dists(data, nneighbors=10, folder='model', dist='l2'):
     nneighbors  number of closest neighbors to include in distance list
 
     '''
-    stopwords = codecs.open(folder+"/stopwords.txt", "r", encoding="utf-8", errors='ignore').readlines()[5:]
+    stopwords = codecs.open("stopwords.txt", "r", encoding="utf-8", errors='ignore').readlines()[5:]
     stops = map(lambda x:x.lower().strip(),stopwords)
 
     # using now stopwords and filtering out digits
@@ -180,7 +180,7 @@ def load_sentiment(negative='SentiWS_v1.8c/SentiWS_v1.8c_Negative.txt',\
 def get_sentiments(data):
     
     # filtering out some noise words
-    stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
+    stops = map(lambda x:x.lower().strip(),open('stopwords.txt').readlines()[6:])
 
     # vectorize non-stopwords 
     bow = TfidfVectorizer(min_df=2,stop_words=stops)
@@ -209,7 +209,7 @@ def kpca_cluster(data,nclusters=100,ncomponents=40,topwhat=10,zscored=False):
     '''
     from sklearn.cluster import KMeans
     # filtering out some noise words
-    stops = map(lambda x:x.lower().strip(),open('model/stopwords.txt').readlines()[6:])
+    stops = map(lambda x:x.lower().strip(),open('stopwords.txt').readlines()[6:])
 
     # vectorize non-stopwords 
     bow = TfidfVectorizer(min_df=2,stop_words=stops)

@@ -1,5 +1,4 @@
-model/textdata
-model/**/*.pickle
+model/*
 
 *.swp
 

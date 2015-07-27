@@ -15,7 +15,7 @@ from numpy.random import permutation
 import codecs
 
 def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
-                folder='model/textdata', \
+                folder='model', \
                 suffix='-data.txt'):
     '''
     
@@ -24,7 +24,7 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
     INPUT 
     url     the base URL of the speeches
     folder  the folder to download the files to
-    suffix  a suffix for the speeche files 
+    suffix  a suffix for the speeche files
     '''
     if not os.path.isdir(folder+'/textdata'):
         os.mkdir(folder+'/textdata')
@@ -41,7 +41,7 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
     for url in list_urls:
         if url.has_attr('href') and url['href'].find(suffix) > 0:
             remotefn = 'http://www.bundestag.de'+url['href']
-            localfn = folder + '/' + url['href'].split('/')[-1]
+            localfn = folder + '/textdata/' + url['href'].split('/')[-1]
             if not os.path.isfile(localfn):
                 print 'Found new file, downloading: %s'%remotefn
                 print 'Downloading %s to %s'%(remotefn,localfn)
@@ -76,10 +76,10 @@ def clean(txt, folder='model', stopwords=[]):
 
 def get_stops(folder='model'):
     # generic stopwords
-    stopwords = codecs.open(folder+"/stopwords.txt", "r", "utf-8").readlines()[10:]
+    stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[10:]
     stops = map(lambda x:x.lower().strip(),stopwords)
     # names of abgeordnete
-    abgeordnete = codecs.open('model/abgeordnete.txt',encoding='utf-8').readlines()
+    abgeordnete = codecs.open('abgeordnete.txt',encoding='utf-8').readlines()
     names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
     return stops + names
 
@@ -100,7 +100,7 @@ def partyparse_update(folder='model', suffix='-data.txt', \
     '''
 
     # find all files with suffix
-    files = get_speech_files(folder=folder+'/textdata',suffix=suffix)
+    files = get_speech_files(folder=folder,suffix=suffix)
     
     # if there is no new data, quit
     if len(files)==0: return

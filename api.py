@@ -1,3 +1,4 @@
+import flask
 from flask import Flask, request, jsonify, render_template
 import os
 app = Flask(__name__, static_folder='web/build')
@@ -18,13 +19,16 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 scheduler = BackgroundScheduler()
 
+import newsreader
 @scheduler.scheduled_job(trigger='cron', minute='0,30')
 def fetch_news_job():
-  # TODO really fetch news
+  newsreader.get_news()
+  newsreader.write_distances_json()
 
 @scheduler.scheduled_job(trigger='cron', hour='3')
 def retrain_classifier_job():
   # TODO really fetch new bundestag data and retrain classifier
+  0
 
 ### API
 
@@ -53,6 +57,10 @@ def predict():
     else:
         text = request.form['text']
         return jsonify(classifier.predict(text))
+
+@app.route('/api/distances.json')
+def news():
+  return flask.send_from_directory('model', 'distances.json')
 
 # static files from web/build
 

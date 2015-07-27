@@ -1,33 +1,40 @@
 ---
-title: Partypredictor
+title: Gesinnunsganalyse
 ---
-.container
+.container#pp
   .row
     .col-md-12{:role => "main"}
-      %h1.page-header Partypredictor*
+      %h1.page-header Politische Gesinningsanalyse
+      %p#pp--description
+        Auf dieser Seite können Sie die politische Gesinning von Texten und Internetseiten analysieren<a href="#disclaimer">*</a>.
+        Sie können einen Text in das erste Formular kopieren oder eine Internetseite analysieren, indem Sie eine URL in das zweite Formular kopieren.
+        Wir analysieren auch kontinuierlich einige der großen #{ link_to 'Nachrichten-Seiten', '/news.html' }.
       %form{:role => "form"}
         .form-group
           .col-xs-7
-            %label{:for => "text_query"} Mit Text
+            %label{:for => "text_query"} Analysiere einen Text
             %textarea#text_query.form-control{:placeholder => "Hier einen Text reinpasten"}
-            %button#submit_text.btn.btn-default{:type => "button"} Submit Text
+            %button#submit_text.btn.btn-default{:type => "button"} Analyse starten
           .col-xs-5
-            %label{:for => "submit_url"} Mit URL
+            %label{:for => "submit_url"} Analysiere eine Internetseite
             %textarea#url_query.form-control{:placeholder => "Hier eine URL zu einem Text reinpasten"}
-            %button#submit_url.btn.btn-default{:type => "button"} Submit URL
+            %button#submit_url.btn.btn-default{:type => "button"} Analyse starten
     %svg#prediction
-    %p.lead
-      *Der Text wird in einen
-      %a{:href => "http://en.wikipedia.org/wiki/Tf%E2%80%93idf"} Tf-idf
-      normalisierten
-      %a{:href => "http://en.wikipedia.org/wiki/Bag-of-words_model"} Bag-of-Words Vektor
-      transformiert. Diese Darstellung misst Worthäufigkeiten, wobei seltene Wörter höher gewichtet werden; Wortstruktur wird nicht berücksichtigt. In dieser Vektordarstellung weist eine
-      %a{:href => "http://en.wikipedia.org/wiki/Multinomial_logistic_regression"} Multiclass Logistic Regression
-      den Text einer
-      %a{:href => "https://www.bundestag.de/bundestag/fraktionen"} Fraktion des Deutschen Bundestages
-      zu. Der Classifier wurde trainiert auf den Bag-of-Words Vektoren der
-      = succeed "." do
-        %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
+    #disclaimer
+      %p
+        Natürlich können wir nicht die politische Gesinning aus ein paar Wörtern ziehen. Zumindest nicht perfekt. Daran, dies zu tun, wird jedoch aktiv geforscht [citation needed] und es gibt einige kommerzielle Anwendungsfälle. Beispiele sind [TODO x], [TODO y], [TODO z]. Es darf davon ausgegangen werden, dass ähnliche Techniken, wie wir sie hier verwenden, bereits eingesetzt werden, um ihre Tweets, Forenbeiträge, etc. auszuwerten. Dies ist kein Blick sondern in die Gegenwart.
+      %p
+        Der Text wird in einen
+        %a{:href => "http://en.wikipedia.org/wiki/Tf%E2%80%93idf"} Tf-idf
+        normalisierten
+        %a{:href => "http://en.wikipedia.org/wiki/Bag-of-words_model"} Bag-of-Words Vektor
+        transformiert. Diese Darstellung misst Worthäufigkeiten, wobei seltene Wörter höher gewichtet werden; Wortstruktur wird nicht berücksichtigt. In dieser Vektordarstellung weist eine
+        %a{:href => "http://en.wikipedia.org/wiki/Multinomial_logistic_regression"} Multiclass Logistic Regression
+        den Text einer
+        %a{:href => "https://www.bundestag.de/bundestag/fraktionen"} Fraktion des Deutschen Bundestages
+        zu. Der Classifier wurde trainiert auf den Bag-of-Words Vektoren der
+        = succeed "." do
+          %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
 
     -# :markdown
     -#   Hier ein bisschen Mathe $ \alpha $
