@@ -38,9 +38,8 @@ class Vectorizer:
         '''
         
         processors = dict()
-        fn = self.folder+'/textdata/rawtext.pickle'
-        print 'Loading Textfile %s'%fn
-        data = cPickle.load(open(fn))
+        print 'Loading Textfiles %s'%fn
+        data = get_speech_text(folder=folder)
         text = chain.from_iterable(data.values())
         
         # stemming

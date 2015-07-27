@@ -14,7 +14,7 @@ from scipy.sparse import vstack
 from numpy.random import permutation
 import codecs
 
-def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
+def download(url='https://www.bundestag.de/plenarprotokolle', \
                 folder='model', \
                 suffix='-data.txt'):
     '''
@@ -43,11 +43,11 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
             remotefn = 'http://www.bundestag.de'+url['href']
             localfn = folder + '/textdata/' + url['href'].split('/')[-1]
             if not os.path.isfile(localfn):
-                print 'Found new file, downloading: %s'%remotefn
-                print 'Downloading %s to %s'%(remotefn,localfn)
+                print 'Found new file: %s'%remotefn
+                print 'Downloading to %s'%localfn
                 fh = open(localfn,'wb')
-                req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})
-                
+                req = urllib2.Request(remotefn,headers={'User-Agent':user_agent,})               
+
                 try:
                     txt = urllib2.urlopen(req).read()
                     txt = txt.decode('utf8')
@@ -57,10 +57,6 @@ def get_speech_files(url='https://www.bundestag.de/plenarprotokolle', \
                     txt = txt.decode('latin1').encode('utf8')
                     fh.write(txt)
                 fh.close()
-            
-            new_urls.append(localfn)
-
-    return new_urls
 
 def clean(txt, folder='model', stopwords=[]):
     # remove applaus (too easy indicator of party affiliation)
@@ -74,7 +70,7 @@ def clean(txt, folder='model', stopwords=[]):
     txt = ' '.join(txt.split())
     return txt
 
-def get_stops(folder='model'):
+def get_stops(folder=''):
     # generic stopwords
     stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[10:]
     stops = map(lambda x:x.lower().strip(),stopwords)
@@ -83,7 +79,28 @@ def get_stops(folder='model'):
     names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
     return stops + names
 
-def partyparse_update(folder='model', suffix='-data.txt', \
+def get_speech_text(folder='model',suffix='_parsed.json'):
+
+    # find all files with suffix
+    files = glob.glob(folder+"/textdata/*"+suffix)
+
+    for f in files:    
+        # get the parsed data
+        thisdata = json.loads(codecs.open(f,'r','utf-8').read())
+        print "Read parsed file %s"%f
+        if files.index(f) == 0:
+            data = {x:[] for x in thisdata.keys()}
+
+        print "Attaching data to speech collection"
+        for pa in data.keys():
+            data[pa] += thisdata[pa]
+
+    for pa in data.keys():
+        print 'Found %d speeches for party %s'%(len(data[pa]),pa)
+
+    return data
+
+def parse(folder='model', suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
                 {'name':'spd','searchpattern':'SPD'},\
                 {'name':'gruene','searchpattern':'90/DIE'},\
@@ -100,14 +117,7 @@ def partyparse_update(folder='model', suffix='-data.txt', \
     '''
 
     # find all files with suffix
-    files = get_speech_files(folder=folder,suffix=suffix)
-    
-    # if there is no new data, quit
-    if len(files)==0: return
-
-    datafn = folder+'/textdata/rawtext.pickle'
-
-    data = {x['name']:[] for x in parties}
+    files = glob.glob(folder+"/textdata/*"+suffix)
 
     # get stopwords
     stops = get_stops(folder=folder)
@@ -117,10 +127,7 @@ def partyparse_update(folder='model', suffix='-data.txt', \
     for f in files:
         fn_parsed = f[:-4] + "_parsed.json"
         
-        if os.path.isfile(fn_parsed):
-            thisdata = json.loads(codecs.open(fn_parsed,'r','utf-8').read())
-            print "Read parsed file %s"%fn_parsed
-        else:
+        if not os.path.isfile(fn_parsed):
             print "Parsing %s (%d/%d)"%(f,files.index(f)+1,len(files))
             fh = codecs.open(f,'r', encoding='utf-8', errors='ignore')
             txt = fh.read()
@@ -145,32 +152,6 @@ def partyparse_update(folder='model', suffix='-data.txt', \
             print "Storing parsed data in %s"%fn_parsed
             open(fn_parsed,'wb').write(json.dumps(thisdata, ensure_ascii=False).encode('utf8'))
 
-        print "Attaching data to speech collection"
-        for pa in parties:
-            data[pa['name']] += thisdata[pa['name']]
-
-    for idx in range(len(parties)):
-        print 'Found %d speeches for party %s'%(len(data[parties[idx]['name']]),parties[idx]['name'])
-    
-    # store the data
-    print 'Saving raw text to %s'%datafn
-    cPickle.dump(data,open(datafn,'wb'),-1)
-
-def txt2BoW(folder='model'):
-    '''
-
-    Transforms strings of each speach into Bag-of-Words vectors, with tf-idf normalization
-
-    INPUT
-    folder  the folder of the raw text pickle file from partyparse function
-
-    '''
-
-    # train or load vectorizer
-    # training a new vectorizer will store the BoW'd data
-    from vectorizer import Vectorizer
-    vect = Vectorizer(folder=folder)
-   
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(\
@@ -187,13 +168,13 @@ if __name__ == "__main__":
 
     parser.add_argument('-p','--parse',help='If new files should be downloaded and parsed into different parties',\
             action='store_true', default=False)
-    parser.add_argument('-t','--transform',help='If texts should be bag-of-word transformed',\
+    parser.add_argument('-d','--download',help='If texts should be parsed/cleaned',\
             action='store_true', default=False)
     
     args = vars(parser.parse_args())
     if not os.path.isdir(args['folder']):
         os.mkdir(args['folder']) 
     if args['parse']:
-        partyparse_update(folder=args['folder'],suffix=args['suffix']) 
-    if args['transform']:
-        txt2BoW(folder=args['folder'])
+        parse(folder=args['folder'],suffix=args['suffix']) 
+    if args['download']:
+        download(folder=args['folder'])

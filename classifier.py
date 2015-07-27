@@ -10,6 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from time import sleep
 from vectorizer import Vectorizer
+from downloader import get_speech_text
 
 class Classifier:
 
@@ -76,11 +77,12 @@ class Classifier:
         '''
         try:
             # load the data
-            fn = self.folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(self.bow_vectorizer.steps))
-            data = cPickle.load(open(fn))
+            data = get_speech_text(folder=self.folder)
+            for key in data:
+                data[key] = self.bow(data[key])
         except:
-            print('Could not load Bag-0f-Words file in %s\n'%fn + \
-                  'Try executing [python downloader.py --download --parse --transform]')
+            print('Could not load text data file in\n' + \
+                  'Try executing [python downloader.py --download --parse]')
             raise
         # create numerical labels for each party
         Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))

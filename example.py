@@ -22,6 +22,7 @@ from vectorizer import Vectorizer
 from newsreader import load_sentiment
 import codecs
 from itertools import chain
+from downloader import get_speech_text
 
 def optimize_bow(folder='model'):
     steps = [['stemming','trigrams','tfidf'],\
@@ -64,7 +65,10 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfi
     vv = Vectorizer(steps=steps)
 
     # load data
-    data = cPickle.load(open(folder+'/bag_of_words_%s.pickle'%'_'.join(sorted(steps))))
+    vec = Vectorizer(folder=folder)
+    data = get_speech_text(folder=folder)
+    for key in data.keys():
+        data[key] = vec.transform(data[key])
     # create numerical labels
     Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
     # create data matrix

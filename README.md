@@ -21,7 +21,7 @@ and for the frontend
 
 In order to train a classifier we download, parse and Bag-of-word transform the speeches and discussions of the German Bundestag from http://www.bundestag.de/plenarprotokolle'
 
-    python downloader.py --parse --transform
+    python downloader.py --download --parse
 
 ### Download Newspaper articles
 
