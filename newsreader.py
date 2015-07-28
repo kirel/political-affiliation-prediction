@@ -96,7 +96,7 @@ def all_saved_news(folder='model'):
     import glob
     from string import digits
     # get just the most recent news articles file (assuming date label ordering)
-    news = json.load(open(glob.glob(folder+'/news*.json')[-1],"r","utf-8"))
+    news = json.load(open(glob.glob(folder+'/news*.json')[-1],"r"))
     # collect text data from all articles
     articles, data = [], []
     for source in news.keys():
@@ -270,7 +270,7 @@ def write_distances_json(folder='model'):
     dists = ['l2_kpca']
     distances_json = {
             'articles': articles,
-            'sentiments': json.dumps(get_sentiments(articles,data).tolist()),
+            'sentiments': json.dumps(get_sentiments(data).tolist()),
             'distances': [
                 { 'name': dist, 'distances': pairwise_dists(data,dist = dist) } for dist in dists
             ],

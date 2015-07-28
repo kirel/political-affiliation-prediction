@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from itertools import chain,islice
 from Stemmer import Stemmer
+from downloader import get_speech_text
 
 class Vectorizer:
     '''
@@ -38,8 +39,7 @@ class Vectorizer:
         '''
         
         processors = dict()
-        print 'Loading Textfiles %s'%fn
-        data = get_speech_text(folder=folder)
+        data = get_speech_text(folder=self.folder)
         text = chain.from_iterable(data.values())
         
         # stemming
