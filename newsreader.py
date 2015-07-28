@@ -284,7 +284,7 @@ def write_distances_json(folder='model'):
     datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     open(folder+'/distances-%s'%(datestr)+'.json', 'wb').write(json.dumps(distances_json))
     # also save that latest version for the visualization
-    open(folder+'/../web/source/distances.json', 'wb').write(json.dumps(distances_json))
+    open(folder+'/distances.json', 'wb').write(json.dumps(distances_json))
 
 if __name__ == "__main__":
     import argparse

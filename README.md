@@ -29,7 +29,7 @@ Downloads news articles on politics landing page of various german newspapers an
 
     python newsreader.py --download --distances
 
-The results are stored in a `distances-xxx.json` file, but also in `web/source/distances.json`.
+The results are stored in a `distances-xxx.json` file, but also in `distances.json` to be served to the web gui.
 
 ## Run
 
