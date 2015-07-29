@@ -93,7 +93,7 @@ The build the container
 
 To test the container locally:
 
-    docker run -i -t -p 5000:5000 kirel/political-affiliation-prediction
+    docker run -it --rm -p 5000:5000 kirel/political-affiliation-prediction
 
 To deploy:
 
