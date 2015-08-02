@@ -29,7 +29,7 @@ $ ->
       [r, g, b, a] = getRGBA(data, x, y)
       return [x, y] if a > Math.random() * 255
       tries += 1
-    throw new Error
+    throw new Error # will this ever happen?
 
   getRGBA = (data, x, y) ->
     [r, g, b, a] = [data[(w*y*4)+4*x],data[(w*4*y)+4*x+1],data[(w*4*y)+4*x+2],data[(w*4*y)+4*x+3]]
@@ -62,7 +62,7 @@ $ ->
         dir = dir.rotateDeg(angle*dFn(pos.distance(dest)))
 
     numForceFields = 5
-    changeForceFieldProb = 0.05
+    changeForceFieldProb = 0.01
     # forceFields = (_.zipWith(makeForceField(), makeForceField(), (a, b) -> a.mix(b)) for i in [1..numForceFields])
     forceFields = (makeForceField() for i in [1..numForceFields])
     forceField = forceFields[Math.floor(Math.random()*numForceFields)]
@@ -107,26 +107,28 @@ $ ->
       ctx.drawImage(source, 0, 0, w, h)
 
       # draw the force field
-      for i in [0...w*h]
-        y = i%w
-        x = Math.floor(i/w)
-        dir = force(x, y)
-        continue unless x % 10 == 0 and y % 10 == 0
-        ctx.fillStyle = "rgba(200,200,200,.5)"
-        ctx.strokeStyle = "rgba(200,200,200,.5)"
-        ctx.fillRect(x-1, y-1, 3, 3)
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-        dest = new Victor(x, y).add(dir.clone().multiply(new Victor(4,4)))
-        ctx.lineTo(dest.x, dest.y)
-        ctx.stroke()
+      if DEBUG?
+        for i in [0...w*h]
+          y = i%w
+          x = Math.floor(i/w)
+          dir = force(x, y)
+          continue unless x % 10 == 0 and y % 10 == 0
+          ctx.fillStyle = "rgba(200,200,200,.5)"
+          ctx.strokeStyle = "rgba(200,200,200,.5)"
+          ctx.fillRect(x-1, y-1, 3, 3)
+          ctx.beginPath()
+          ctx.moveTo(x, y)
+          dest = new Victor(x, y).add(dir.clone().multiply(new Victor(4,4)))
+          ctx.lineTo(dest.x, dest.y)
+          ctx.stroke()
 
       for agent in agents
         ctx.fillStyle = agent.color()
         ctx.font = "#{Math.floor(fontSizeScale(agent.dir.lengthSq()))}px Arial"
         ctx.fillText(agent.str, agent.pos.x, agent.pos.y)
 
-    d3.timer ->
+    setInterval(->
       update()
       draw()
       false
+    , 1000/25)
