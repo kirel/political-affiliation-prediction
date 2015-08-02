@@ -8,8 +8,11 @@ $ ->
   ctx = canvas.getContext('2d')
   console.log ctx
 
-  w = 600
+  w = 800
   h = 600
+
+  canvas.width = w
+  canvas.height = h
 
   load = (srcs...) ->
     for src in srcs
@@ -21,7 +24,7 @@ $ ->
         promise
 
   # sample a point from imagedata according to alpha values
-  alphaSample = (data, maxTries = 1000) ->
+  alphaSample = (data, maxTries = 10000) ->
     tries = 0
     while tries < maxTries
       x = Math.floor(Math.random() * w)
@@ -35,6 +38,8 @@ $ ->
     [r, g, b, a] = [data[(w*y*4)+4*x],data[(w*4*y)+4*x+1],data[(w*4*y)+4*x+2],data[(w*4*y)+4*x+3]]
 
   fontSizeScale = d3.scale.linear().domain([0, 10]).range([8,12])
+  clampX = d3.scale.linear().domain([0,w-1]).range([0,w-1]).clamp(true)
+  clampY = d3.scale.linear().domain([0,h-1]).range([0,h-1]).clamp(true)
 
   $.when( load('images/parl.jpg', 'images/source.png', 'images/target.png')... ).done (img, source, target) ->
     ctx.clearRect(0, 0, w, h)
@@ -43,18 +48,19 @@ $ ->
     ctx.clearRect(0, 0, w, h)
     ctx.drawImage(target, 0, 0, w, h)
     targetData = ctx.getImageData(0, 0, w, h)
+    ctx.drawImage(img, 0, 0, w, h)
 
     # create force field
     # for each point create a unit vector pointing to a random target point
     makeForceField = ->
-      dest = Victor.fromArray(alphaSample(targetData.data, 10000))
-      angle = if Math.random() < 0.5 then 90 else -90
+      dest = Victor.fromArray(alphaSample(targetData.data))
+      angle = if Math.random() < 0.5 then 75 else -75
       dFn = (x) ->
         c = 400
         Math.max(0, 1-x/c)
       for i in [0...w*h]
-        y = i%w
-        x = Math.floor(i/w)
+        x = i%w
+        y = Math.floor(i/w)
         pos = new Victor(x, y)
         speedup = 2
         dir = dest.clone().subtract(pos).normalize().clone().multiply(new Victor(speedup + speedup*Math.random(), speedup + speedup*Math.random()))
@@ -70,7 +76,7 @@ $ ->
     console.log 'done force'
 
     force = (x, y) ->
-      forceField[Math.floor(x)*w+Math.floor(y)]
+      forceField[Math.floor(clampY(y))*w+Math.floor(clampX(x))]
 
     # set up agents
     agents = []
@@ -103,14 +109,15 @@ $ ->
 
     draw = ->
       ctx.drawImage(img, 0, 0, w, h)
-      ctx.drawImage(target, 0, 0, w, h)
-      ctx.drawImage(source, 0, 0, w, h)
+      if DEBUG?
+        ctx.drawImage(target, 0, 0, w, h)
+        ctx.drawImage(source, 0, 0, w, h)
 
       # draw the force field
       if DEBUG?
         for i in [0...w*h]
-          y = i%w
-          x = Math.floor(i/w)
+          x = i%w
+          y = Math.floor(i/w)
           dir = force(x, y)
           continue unless x % 10 == 0 and y % 10 == 0
           ctx.fillStyle = "rgba(200,200,200,.5)"
