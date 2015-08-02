@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from readability.readability import Document
 
 DEBUG = os.environ.get('DEBUG') != None
+JOBS = os.environ.get('JOBS') != None
 VERSION = 0.1
 
 ### news regeneration
@@ -79,5 +80,6 @@ if __name__ == "__main__":
     # Open a web browser pointing at the app.
     # os.system("open http://localhost:{0}".format(port))
 
-    scheduler.start()
+    if JOBS:
+      scheduler.start()
     app.run(host='0.0.0.0', port = port, debug = DEBUG)
