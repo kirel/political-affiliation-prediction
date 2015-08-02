@@ -1,4 +1,5 @@
 //= require lodash
+//= require victor
 //= require d3
 //= require jquery
 //= require angular
