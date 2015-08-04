@@ -10,7 +10,7 @@ $ ->
 
   w = 800
   h = 600
-  DEBUG = 1
+  # DEBUG = 1
 
   canvas.width = w
   canvas.height = h
@@ -81,8 +81,8 @@ $ ->
 
     # set up agents
     agents = []
-    maxAgents = 800
-    numAdd = 5
+    maxAgents = 1200
+    numAdd = 10
     update = ->
       # new agents
       for i in [1..numAdd]
@@ -96,10 +96,11 @@ $ ->
           g: g
           b: b
           a: 1
+          mod: Math.random()*.5 + .5
           color: -> "rgba(#{@r}, #{@g}, #{@b}, #{@a})"
       # move angents
       for agent, i in agents
-        agent.a = _.min([i*10/agents.length,1,(i-agents.length)*10/-agents.length]) # close to 0 and close to agents.length should fade to 0
+        agent.a = agent.mod**2 * _.min([i*10/agents.length,1,(i-agents.length)*10/-agents.length]) # close to 0 and close to agents.length should fade to 0
         agent.dir = agent.dir.mix(force(agent.pos.x, agent.pos.y), 0.1)
         agent.pos = agent.pos.add(agent.dir)
       # remove agents
@@ -132,7 +133,7 @@ $ ->
 
       for agent in agents
         ctx.fillStyle = agent.color()
-        ctx.font = "#{Math.floor(fontSizeScale(agent.dir.lengthSq()))}px Arial"
+        ctx.font = "#{Math.floor(agent.mod*fontSizeScale(agent.dir.lengthSq()))}px Arial"
         ctx.fillText(agent.str, agent.pos.x, agent.pos.y)
 
     setInterval(->
