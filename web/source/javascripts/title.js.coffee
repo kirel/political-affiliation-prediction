@@ -82,7 +82,7 @@ $ ->
     # set up agents
     agents = []
     maxAgents = 1200
-    numAdd = 10
+    numAdd = 8
     update = ->
       # new agents
       for i in [1..numAdd]
