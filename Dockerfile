@@ -8,6 +8,7 @@ ADD newsreader.py /app/newsreader.py
 ADD downloader.py /app/downloader.py
 ADD classifier.py /app/classifier.py
 ADD vectorizer.py /app/vectorizer.py
+ADD stopwords.txt /app/stopwords.txt
 ADD model /app/model
 ADD web/build /app/web/build
 

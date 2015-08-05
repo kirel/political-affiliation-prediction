@@ -11,6 +11,7 @@
     - pip: name=docker-py version=1.1.0
     - name: run political-affiliation-prediction
       docker: image=kirel/political-affiliation-prediction
+              pull=always
               ports=80:5000
               name=political-affiliation-prediction
               state=running
