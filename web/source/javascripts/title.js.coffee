@@ -6,6 +6,8 @@ gaussian = (mu, sigma) -> (x) ->
 $ ->
   w = 1140
   h = 570
+  DEBUG = false
+  setInterval((-> DEBUG = (document.location.hash == '#debug')), 1000)
 
   canvas = document.getElementById("pp--title--canvas")
   canvas.width = w
@@ -111,12 +113,12 @@ $ ->
 
     draw = ->
       ctx.drawImage(img, 0, 0, w, h)
-      if DEBUG?
+      if DEBUG
         ctx.drawImage(target, 0, 0, w, h)
         ctx.drawImage(source, 0, 0, w, h)
 
       # draw the force field
-      if DEBUG?
+      if DEBUG
         for i in [0...w*h]
           x = i%w
           y = Math.floor(i/w)
