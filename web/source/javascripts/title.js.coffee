@@ -4,16 +4,17 @@ gaussian = (mu, sigma) -> (x) ->
   gaussianConstant * Math.exp(-.5 * x * x) / sigma
 
 $ ->
-  canvas = document.getElementById("pp--title")
-  ctx = canvas.getContext('2d')
-  console.log ctx
+  w = 1140
+  h = 570
 
-  w = 800
-  h = 600
-  # DEBUG = 1
-
+  canvas = document.getElementById("pp--title--canvas")
   canvas.width = w
   canvas.height = h
+  ctx = canvas.getContext('2d')
+  window.offscreen = document.createElement('canvas')
+  offscreen.width = w
+  offscreen.height = h
+  buffer = offscreen.getContext('2d')
 
   load = (srcs...) ->
     for src in srcs
@@ -42,14 +43,13 @@ $ ->
   clampX = d3.scale.linear().domain([0,w-1]).range([0,w-1]).clamp(true)
   clampY = d3.scale.linear().domain([0,h-1]).range([0,h-1]).clamp(true)
 
-  $.when( load('images/parl.jpg', 'images/source.png', 'images/target.png')... ).done (img, source, target) ->
-    ctx.clearRect(0, 0, w, h)
-    ctx.drawImage(source, 0, 0, w, h)
-    sourceData = ctx.getImageData(0, 0, w, h)
-    ctx.clearRect(0, 0, w, h)
-    ctx.drawImage(target, 0, 0, w, h)
-    targetData = ctx.getImageData(0, 0, w, h)
-    ctx.drawImage(img, 0, 0, w, h)
+  $.when( load('images/img.png', 'images/source.png', 'images/target.png')... ).done (img, source, target) ->
+    buffer.clearRect(0, 0, w, h)
+    buffer.drawImage(source, 0, 0, w, h)
+    sourceData = buffer.getImageData(0, 0, w, h)
+    buffer.clearRect(0, 0, w, h)
+    buffer.drawImage(target, 0, 0, w, h)
+    targetData = buffer.getImageData(0, 0, w, h)
 
     # create force field
     # for each point create a unit vector pointing to a random target point
@@ -100,7 +100,7 @@ $ ->
           color: -> "rgba(#{@r}, #{@g}, #{@b}, #{@a})"
       # move angents
       for agent, i in agents
-        agent.a = agent.mod**2 * _.min([i*10/agents.length,1,(i-agents.length)*10/-agents.length]) # close to 0 and close to agents.length should fade to 0
+        agent.a = agent.mod**2 * _.min([i*10/agents.length,1,(i-agents.length)*2/-agents.length]) # close to 0 and close to agents.length should fade to 0
         agent.dir = agent.dir.mix(force(agent.pos.x, agent.pos.y), 0.1)
         agent.pos = agent.pos.add(agent.dir)
       # remove agents
@@ -135,6 +135,8 @@ $ ->
         ctx.fillStyle = agent.color()
         ctx.font = "#{Math.floor(agent.mod*fontSizeScale(agent.dir.lengthSq()))}px Arial"
         ctx.fillText(agent.str, agent.pos.x, agent.pos.y)
+
+      ctx.drawImage(target, 0, 0, w, h)
 
     setInterval(->
       update()
