@@ -99,3 +99,7 @@ To deploy:
 
     pip install -r requirements.dev.txt
     ansible-playbook ansible/deploy.yml -i ansible/inventory
+
+### When the registry fails
+
+docker save kirel/political-affiliation-prediction | bzip2 | pv | ssh ubuntu@52.28.176.27 'bunzip2 | sudo docker load'
