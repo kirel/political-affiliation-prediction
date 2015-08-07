@@ -243,7 +243,7 @@ def kpca_cluster(data,nclusters=100,ncomponents=40,topwhat=10,zscored=False):
             topwords = ' '.join([idx2word[wi] for wi in topwordidx])
             meanDist = triu(pairwise_distances(X[members,:],metric='l2',n_jobs=1)).sum()
             meanDist = meanDist / (len(members) + (len(members)**2 - len(members))/2.0)
-            print 'Cluster %d'%icluster + ' %d members'%nmembers + ' mean Distance %f'%meanDist + '\n\t'+topwords
+            print u'Cluster %d'%icluster + u' %d members'%nmembers + u' mean Distance %f'%meanDist + u'\n\t'+topwords
             clusters.append({
                 'name':'Cluster-%d'%icluster,
                 'description': topwords,
