@@ -3,6 +3,12 @@ from flask import Flask, request, jsonify, render_template
 import os
 app = Flask(__name__, static_folder='web/build')
 
+import raven
+ravenClient = raven.Client(dsn='https://85db503b6be040a2942ffb3a24577b14:ab5fe479abe540f4817f2e13e4ed6e95@app.getsentry.com/49850')
+from raven.contrib.flask import Sentry
+app.config['SENTRY_DSN'] = 'https://85db503b6be040a2942ffb3a24577b14:ab5fe479abe540f4817f2e13e4ed6e95@app.getsentry.com/49850'
+sentry = Sentry(app)
+
 from classifier import Classifier
 # from downloader import Downloader
 from retrying import retry
@@ -23,8 +29,11 @@ scheduler = BackgroundScheduler()
 import newsreader
 @scheduler.scheduled_job(trigger='cron', minute='0,30')
 def fetch_news_job():
-  newsreader.get_news()
-  newsreader.write_distances_json()
+  try:
+    newsreader.get_news()
+    newsreader.write_distances_json()
+  except:
+    ravenClient.captureException()
 
 @scheduler.scheduled_job(trigger='cron', hour='3')
 def retrain_classifier_job():
