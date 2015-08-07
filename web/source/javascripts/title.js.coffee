@@ -4,12 +4,13 @@ gaussian = (mu, sigma) -> (x) ->
   gaussianConstant * Math.exp(-.5 * x * x) / sigma
 
 $ ->
+  canvas = document.getElementById("pp--title--canvas")
+  return unless canvas
   w = 1140
   h = 570
   DEBUG = false
   setInterval((-> DEBUG = (document.location.hash == '#debug')), 1000)
 
-  canvas = document.getElementById("pp--title--canvas")
   canvas.width = w
   canvas.height = h
   ctx = canvas.getContext('2d')
@@ -57,7 +58,7 @@ $ ->
     # for each point create a unit vector pointing to a random target point
     makeForceField = ->
       dest = Victor.fromArray(alphaSample(targetData.data))
-      angle = if Math.random() < 0.5 then 75 else -75
+      angle = if Math.random() < 0.5 then 70 else -70
       dFn = (x) ->
         c = 400
         Math.max(0, 1-x/c)
@@ -83,8 +84,8 @@ $ ->
 
     # set up agents
     agents = []
-    maxAgents = 1200
-    numAdd = 8
+    maxAgents = 1000
+    numAdd = 7
     update = ->
       # new agents
       for i in [1..numAdd]

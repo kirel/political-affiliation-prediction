@@ -7,13 +7,14 @@ $cdu: #121212;
 $spd: #D52326;
 $linke: #BD3476;
 
-@import "network-chart";
-@import "article-politics";
+h1, h2, h3 { text-align: center; }
 
 body {
-  font: sans-serif;
-  // font-size: 10px;
   background: #FCFCFA;
+}
+
+body, p {
+  font-family: 'Open Sans', sans-serif;
 }
 
 svg {
@@ -34,17 +35,62 @@ svg {
   position: relative;
   &:before {
     display: block;
-    font-size: 3em;
+    font-size: 2.5em;
     position: absolute;
-    left: -.4em;
+    left: -.5em;
     top: -.5em;
     content: '*';
   }
 }
 
-#news {
-  .description {
-    font-size: 1.2em;
+#news--controls, #news--description {
+  text-align: center;
+}
+
+#news--controls {
+  margin-top: 1em;
+}
+
+#news--clusters {
+  padding: 0;
+  ul { padding: 0; }
+  li { list-style: none; }
+  a {
+    display: block;
+    float: right;
+    width: 80%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: .5em;
+  }
+}
+
+.news--cluster {
+  margin-top: 1em;
+}
+
+article-politics {
+  ul, li {
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    height: 100%;
+  }
+  ul {
+    width: 20%;
+  }
+  li.linke {
+    background-color: $linke;
+  }
+  li.spd {
+    background-color: $spd;
+  }
+  li.gruene {
+    background-color: $gruene;
+  }
+  li.cdu {
+    background-color: $cdu;
   }
 }
 
@@ -53,7 +99,6 @@ svg {
   padding-top: 25%;
 
   h1 { display: none; }
-  h2 { text-align: center; }
 
   img {
     z-index: -2

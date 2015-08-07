@@ -1,37 +1,42 @@
 ---
 title: Partypredictor Network
 ---
-.container(ng-app='news' ng-controller='newsCtrl')
-  %h1 News
-  .row
-    #news-controls
-      %label Clustering
+.container#news(ng-app='news' ng-controller='newsCtrl')
+  #pp--title
+    %h1 linksrechts
+    %h2 Die Nachrichten
+    %img(src='images/img.png')
+    %img(src='images/target.png')
+    %canvas#pp--title--canvas
+  %p#news--description
+    Hier analysieren#{ link_to '*', '/#disclaimer' } wir die politische Gesinning der aktuellen Nachrichten. Dazu laden wir Nachrichten von TODO, TODO, TODO und TODO halbstündlich herunter und schicken sie durch unsere Analysepipeline.
+    %br
+    Ihr habt auch die Möglichkeit #{ link_to 'eigene Texte oder Internetadressen', '/' } zu analysieren.
+    
+  #news--controls.row
+    .col-md-12
+      nach
       %span(ng-repeat='clust in selectableClusterings')
+        %span(ng-if="$index > 0") /
         %label(for="clustering-{{clust.name}}")
           %input(type="radio" ng-value="clust" ng-model='controls.selectedClustering' name='clustering' id="clustering-{{clust.name}}")
           {{clust.name}}
+      sortieren
       %br
-      %label
-        %input(type='checkbox' ng-model='controls.sortRightToLeft')
-        Sort right to left
+        von
+        %label(for="sort-rtol")
+          %input(type="radio" ng-value="true" ng-model='controls.sortRightToLeft' name='sort' id="sort-rtol")
+          rechts nach links
+        \/
+        %label(for="sort-ltor")
+          %input(type="radio" ng-value="false" ng-model='controls.sortRightToLeft' name='sort' id="sort-ltor")
+          links nach rechts
+        sortieren
 
-    #news
-      %ul#news--clusters
-        %li(ng-repeat="cluster in controls.selectedClustering.clusters | orderBy:'members.length':true")
-          %h2 {{cluster.name}}
-          %p.description {{cluster.description}}
-          %ul#news--clusters--articles
-            %li(ng-repeat='memberIndex in cluster.members | orderBy:scoreLeftRight:controls.sortRightToLeft')
-              %article-politics(article='network.articles[memberIndex]')
-              %a(href="{{network.articles[memberIndex].url}}") {{network.articles[memberIndex].title}}
-    -# :markdown
-    -#   Hier ein bisschen Mathe $ \alpha $
-
--# :javascript
--#   window.MathJax = {
--#     tex2jax: {
--#       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
--#       processEscapes: true
--#     }
--#   };
--# %script(type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML")
+  %ul#news--clusters.row
+    %li.news--cluster.col-md-8.col-md-offset-2(ng-repeat="cluster in controls.selectedClustering.clusters | orderBy:'members.length':true")
+      %h3 {{cluster.description}}
+      %ul#news--clusters--articles
+        %li(ng-repeat='memberIndex in cluster.members | orderBy:scoreLeftRight:controls.sortRightToLeft')
+          %article-politics(article='network.articles[memberIndex]')
+          %a(href="{{network.articles[memberIndex].url}}") {{network.articles[memberIndex].title}}

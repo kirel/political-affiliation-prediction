@@ -275,8 +275,8 @@ def write_distances_json(folder='model'):
                 { 'name': dist, 'distances': pairwise_dists(data,dist = dist) } for dist in dists
             ],
             'clusterings': [
-                { 'name': 'prediction', 'clusters': party_cluster(articles) },
-                { 'name': 'kpca_nclusters_60_ncomponents_40', 'clusters': kpca_cluster(data,nclusters=len(articles)/2,ncomponents=40,zscored=False) },
+                { 'name': 'Parteivorhersage', 'clusters': party_cluster(articles) },
+                { 'name': 'Ähnlichkeit', 'clusters': kpca_cluster(data,nclusters=len(articles)/2,ncomponents=40,zscored=False) },
             ]
         }
 
