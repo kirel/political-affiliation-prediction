@@ -38,7 +38,10 @@ def fetch_news_job():
 @scheduler.scheduled_job(trigger='cron', hour='3')
 def retrain_classifier_job():
   # TODO really fetch new bundestag data and retrain classifier
-  0
+  try:
+    0
+  except:
+    ravenClient.captureException()
 
 ### API
 
