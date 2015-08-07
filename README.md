@@ -35,7 +35,7 @@ The results are stored in a `distances-xxx.json` file, but also in `distances.js
 
 ### Start server with pretrained classifier
 
-    DEBUG=1 python api.py
+    DEBUG=1 NOJOBS=1 python api.py
 
 ### Start the frontend development server
 
