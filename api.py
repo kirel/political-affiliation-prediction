@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from readability.readability import Document
 
 DEBUG = os.environ.get('DEBUG') != None
-JOBS = os.environ.get('JOBS') != None
+JOBS = os.environ.get('NOJOBS') != '1'
 VERSION = 0.1
 
 ### news regeneration
