@@ -39,4 +39,6 @@ title: Partypredictor Network
       %ul#news--clusters--articles
         %li(ng-repeat='memberIndex in cluster.members | orderBy:scoreLeftRight:controls.sortRightToLeft')
           %article-politics(article='network.articles[memberIndex]')
-          %a(href="{{network.articles[memberIndex].url}}") {{network.articles[memberIndex].title}}
+          %a(href="{{network.articles[memberIndex].url}}")
+            %img(src="https://plus.google.com/_/favicon?domain_url={{network.articles[memberIndex].domain}}")
+            {{network.articles[memberIndex].title}}

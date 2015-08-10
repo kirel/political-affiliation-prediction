@@ -18,6 +18,8 @@ app.controller 'newsCtrl', ($scope, Network) ->
     $scope.selectableClusterings = network.clusterings
     $scope.controls.selectedClustering = _.last($scope.selectableClusterings)
     $scope.controls.sortRightToLeft = true
+    for article in $scope.network.articles
+      article.domain = article.url.split(/\//)[0..2].join('/')
 
   $scope.scoreLeftRight = (index) ->
     article = $scope.network.articles[index]
