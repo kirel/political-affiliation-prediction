@@ -66,7 +66,7 @@ class Classifier:
             text = [text]
         return self.bow_vectorizer.transform(text)
    
-    def train(self,folds = 4):
+    def train(self,folds = 2):
         '''
         trains a classifier on the bag of word vectors extracted with extract_bundestag speeches.py
 
@@ -99,9 +99,9 @@ class Classifier:
         # the regularizer
         parameters = {'C': (10.**arange(-5,5,1.)).tolist()}
         # perform gridsearch to get the best regularizer
-        gs_clf = GridSearchCV(text_clf, parameters, cv=folds, n_jobs=-1)
+        gs_clf = GridSearchCV(text_clf, parameters, cv=folds, n_jobs=-1,verbose=2)
         gs_clf.fit(X,Y)
-        print metrics.classification_report(Y,gs_clf.predict(X),target_names=data.keys())
+        print "Classifier reached mean %0.2f accuracy with regularizer: %f"%(gs_clf.best_score_, gs_clf.best_params_['C'])
         # dump classifier to pickle
         cPickle.dump({'classifier':gs_clf,'labels':data.keys()},open(self.folder+'/classifier.pickle','wb'),-1)
 

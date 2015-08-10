@@ -63,7 +63,8 @@ def get_stops():
     # names of abgeordnete
     abgeordnete = codecs.open('abgeordnete.txt',encoding='utf-8').readlines()
     names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
-    return stops + names
+    #return stops + names
+    return names
 
 rx_nonword = re.compile(u'[\W_^0-9]+', re.UNICODE)
 rx_beifall = re.compile(r'\(beifall[^\(]{1,100}\)')
