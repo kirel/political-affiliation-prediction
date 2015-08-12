@@ -1,7 +1,12 @@
-FROM python:2.7.9
-RUN apt-get -y update && apt-get -y install build-essential gfortran libatlas-base-dev
+FROM continuumio/miniconda
+RUN conda config --add channels https://conda.binstar.org/travis \
+    && conda config --add channels https://conda.binstar.org/dan_blanchard \
+    && conda config --set ssl_verify false \
+    && conda update --yes conda
 RUN pip install --upgrade pip
 ADD requirements.txt /app/requirements.txt
+RUN cat /app/requirements.txt | grep 'scipy\|numpy\|cchardet\|PyStemmer\|^lxml\|scikit-learn' > /app/conda.txt
+RUN conda install --yes --file /app/conda.txt
 RUN pip install -r /app/requirements.txt
 ADD api.py /app/api.py
 ADD newsreader.py /app/newsreader.py
