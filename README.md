@@ -106,4 +106,4 @@ docker save kirel/political-affiliation-prediction | bzip2 | pv | ssh ubuntu@52.
 
 ## License
 
-Copyright (c) 2015 Daniel Kirsch, Felix Bießmann, released under the MIT license, see [MIT-LICENSE](MIT-LICENSE)
+Copyright (c) 2015 Daniel Kirsch, Felix Bießmann, released under the MIT license, see [LICENSE](LICENSE)
