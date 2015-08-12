@@ -8,11 +8,18 @@ title: Partypredictor Network
     %img(src='images/img.png')
     %img(src='images/target.png')
     %canvas#pp--title--canvas
-  %p#news--description
-    Hier analysieren#{ link_to '*', '/#disclaimer' } wir die politische Gesinning der aktuellen Nachrichten. Dazu laden wir Nachrichten von TODO, TODO, TODO und TODO halbstündlich herunter und schicken sie durch unsere Analysepipeline.
+  #news--description.description
+    Hier analysieren#{ link_to '*', '/#disclaimer' } wir die politische Gesinning der aktuellen Nachrichten. Dazu laden wir Nachrichten von Die Welt, Zeit Online, Spiegel Online und F.A.Z. halbstündlich herunter und schicken sie durch unsere Analysepipeline.
+    Unser Algorithmus weist jedem Artikel Kennzahlen zu, die die Ähnlichkeit zur Ausdrucksweise bestimmter Parteien kennzeichnet.
+    Das heißt, ein Artikel, der stark nach CDU, ein wenig nach SPU und nicht so sehr nach Gründe oder Linke aussieht, wird z.B. mit
+    %article-politics(article='article1' ng-init='article1 = {prediction: [{party: "linke", probability: 0.08}, {party: "gruene", probability: 0.12}, {party: "spd", probability: 0.3}, {party: "cdu", probability: 0.5}]}' style='width: 50px;')
+    annotiert. Ein Artikel der eher nach Grüne aussieht wird z.B. mit
+    %article-politics(article='article2' ng-init='article2 = {prediction: [{party: "linke", probability: 0.2}, {party: "gruene", probability: 0.6}, {party: "spd", probability: 0.15}, {party: "cdu", probability: 0.05}]}' style='width: 50px;')
+    annotiert. Wie das genau funktioniert erklären wir #{ link_to 'hier', '/#disclaimer' }.
     %br
+    Für eine bessere Übersicht gruppieren wir mittels Cluster-Analyse nach Themen.
     Ihr habt auch die Möglichkeit #{ link_to 'eigene Texte oder Internetadressen', '/' } zu analysieren.
-    
+
   #news--controls.row
     .col-md-12
       nach

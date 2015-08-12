@@ -1,5 +1,8 @@
 @charset "utf-8";
 
+$font-family-sans-serif: 'Open Sans', sans-serif;
+$link-color: darken(red, 7%);
+
 @import "bootstrap-sass";
 
 $gruene: #7BBB2E;
@@ -11,10 +14,6 @@ h1, h2, h3 { text-align: center; }
 
 body {
   background: #FCFCFA;
-}
-
-body, p {
-  font-family: 'Open Sans', sans-serif;
 }
 
 svg {
@@ -31,6 +30,17 @@ svg {
 .arc.linke  path { fill: $linke; }
 .arc.gruene path { fill: $gruene; }
 
+.description {
+  background: rgba(255,255,255,.75);
+  border-radius: 5px;
+  padding: 10px;
+}
+
+#pp--url-form, #pp--text-form {
+  h4 { text-align: center; }
+  text-align: right;
+}
+
 #disclaimer {
   position: relative;
   &:before {
@@ -43,7 +53,7 @@ svg {
   }
 }
 
-#news--controls, #news--description {
+#news--controls {
   text-align: center;
 }
 
@@ -63,6 +73,7 @@ svg {
     overflow: hidden;
     text-overflow: ellipsis;
     padding-left: .5em;
+    color: darken(#428bca, 6.5%);
   }
 }
 
@@ -71,6 +82,8 @@ svg {
 }
 
 article-politics {
+  display: inline-block;
+  width: 20%;
   ul, li {
     margin: 0;
     padding: 0;
@@ -78,7 +91,7 @@ article-politics {
     height: 100%;
   }
   ul {
-    width: 20%;
+    width: 100%;
   }
   li.linke {
     background-color: $linke;

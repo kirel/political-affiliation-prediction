@@ -10,46 +10,67 @@ title: Gesinnunsganalyse
         %img(src='images/img.png')
         %img(src='images/target.png')
         %canvas#pp--title--canvas
-      %p#pp--description
+      %p#pp--description.description
         Auf dieser Seite können Sie die politische Gesinning von Texten und Internetseiten analysieren<a href="#disclaimer">*</a>.
         Sie können einen Text in das erste Formular kopieren oder eine Internetseite analysieren, indem Sie eine URL in das zweite Formular kopieren.
         Wir analysieren auch kontinuierlich einige der großen #{ link_to 'Nachrichten-Seiten', '/news.html' }.
       %form{:role => "form"}
-        .form-group
-          .col-xs-7
-            %label{:for => "text_query"} Analysiere einen Text
-            %textarea#text_query.form-control{:placeholder => "Hier einen Text reinpasten"}
-            %button#submit_text.btn.btn-default{:type => "button"} Analyse starten
-          .col-xs-5
-            %label{:for => "submit_url"} Analysiere eine Internetseite
-            %textarea#url_query.form-control{:placeholder => "Hier eine URL zu einem Text reinpasten"}
-            %button#submit_url.btn.btn-default{:type => "button"} Analyse starten
+        .col-md-7
+          #pp--text-form
+            %h4 Analysiere einen Text
+            .form-group
+              -# %label{:for => "text_query"} Analysiere einen Text
+              %textarea#text_query.form-control{:placeholder => "Hier einen Text reinpasten"}
+            %button#submit_text.btn.btn-primary{:type => "button"} Analyse starten
+        .col-md-5
+          #pp--url-form
+            %h4 Analysiere eine Internetseite
+            .form-group
+              -# %label{:for => "submit_url"} Analysiere eine Internetseite
+              %textarea#url_query.form-control{:placeholder => "Hier eine URL zu einem Text reinpasten"}
+            %button#submit_url.btn.btn-primary{:type => "button"} Analyse starten
     %svg#prediction
     #disclaimer
       %p
-        Natürlich können wir nicht die politische Gesinnung aus ein paar Wörtern ziehen. Zumindest nicht perfekt. Daran, dies zu tun, wird jedoch aktiv geforscht [citation needed] und es gibt einige kommerzielle Anwendungsfälle. Beispiele sind [TODO x], [TODO y], [TODO z]. Es darf davon ausgegangen werden, dass ähnliche Techniken, wie wir sie hier verwenden, bereits eingesetzt werden, um ihre Tweets, Forenbeiträge, etc. auszuwerten. Dies ist kein Blick in die Zukunft sondern in die Gegenwart.
-      %h4 Wie funktioniert die Analyse?
+        Natürlich können wir nicht die politische Gesinnung aus ein paar Wörtern ziehen. Zumindest nicht perfekt. Daran, dies zu tun, wird jedoch aktiv geforscht<sub>[citation needed]</sub> und es gibt einige kommerzielle Anwendungsfälle<sub>[citation needed]</sub>. Es darf davon ausgegangen werden, dass ähnliche Techniken, wie wir sie hier verwenden, bereits eingesetzt werden, um ihre Tweets, Facebook-Posts, etc. auszuwerten. Dies ist kein Blick in die Zukunft sondern in die Gegenwart.
+      %h4 Wie funktioniert die Analyse? <small>(Für Laien)</small>
+      %p
+        Wir trainieren einen Algorithmus, der auf gewichteten Worthäufigkeiten basiert. Im Prinzip zählen wir die Wörter in unseren Trainingstexten und gewichten sie nach Aussagekraft. Bei einem neuen Text werden die Wörter auf dieselbe Weise gezählt und mit den Trainingstexten verglichen. Wir machen also eine Aussage, wie sehr sich der Sprachstil und die Wortwahl eines Textes/einer Internetadresse mit denen userer Trainingstexte ähnelt. Unsere Trainingstexte sind die #{link_to 'Plenarprotokolle des Bundestages', 'http://www.bundestag.de/plenarprotokolle'}. Wir werten also Ähnlichkeit von Sprachstil und Wortwahl zu den #{link_to 'Fraktion des Deutschen Bundestages', 'https://www.bundestag.de/bundestag/fraktionen'} aus.
+      %h4 Ok, aber wie funktioniert die Analyse genau?
       %p
         Der Text wird in einen
         %a{:href => "http://en.wikipedia.org/wiki/Tf%E2%80%93idf"} Tf-idf
         normalisierten
         %a{:href => "http://en.wikipedia.org/wiki/Bag-of-words_model"} Bag-of-Words Vektor
-        transformiert. Diese Darstellung misst Worthäufigkeiten, wobei seltene Wörter höher gewichtet werden; Wortstruktur wird nicht berücksichtigt. In dieser Vektordarstellung weist eine
+        transformiert. In dieser Vektordarstellung weist eine
         %a{:href => "http://en.wikipedia.org/wiki/Multinomial_logistic_regression"} Multiclass Logistic Regression
         den Text einer
         %a{:href => "https://www.bundestag.de/bundestag/fraktionen"} Fraktion des Deutschen Bundestages
         zu. Der Classifier wurde trainiert auf den Bag-of-Words Vektoren der
-        = succeed "." do
-          %a{:href => "http://www.bundestag.de/plenarprotokolle"} Plenarprotokolle des Bundestages
-
-    -# :markdown
-    -#   Hier ein bisschen Mathe $ \alpha $
-
--# :javascript
--#   window.MathJax = {
--#     tex2jax: {
--#       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
--#       processEscapes: true
--#     }
--#   };
--# %script(type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML")
+        #{link_to 'Plenarprotokolle des Bundestages', 'http://www.bundestag.de/plenarprotokolle'}.
+      %h4 Vergleicht ihr nicht Äpfel mit Birnen?
+      %p
+        Ja. Stimmt. Mit mehr annotierten Trainingstexten (z.B. Nachrichtentexten) sind sicher noch bessere Ergebnisse zu erzielen. Mit den zur Verfügung stehenden Ressourcen eines Freizietprojektes waren die Plenarprotokolle die sinnvollste Wahl.
+      %h4#why Warum macht ihr das?
+      %p
+        Wir sehen dies als Projekt zur politischen Bildung. Viele Texte tragen eine politische Ideologie die nicht direkt sichtbar ist. Wir nehmen diese unterschwellig auf, wenn wir z.B. #{ link_to 'Nachrichten', '/news.html' } lesen. Dieses Projekt ist ein Experiment diese versteckten Informationen sichtbar zu machen.
+      %h4 Was bedeutet die Titelanimation?
+      %p
+        Die Nullen und Einsen repräsentieren Daten, die aus den Köpfen der Parlamentatier kommen und sich auf dem politischen Spektrum verteilen.
+      %h4 Open Source
+      %p
+        Der Quellcode dieses Projektes ist frei verfügbar auf #{link_to 'Github', 'https://github.com/kirel/political-affiliation-prediction'} unter #{link_to 'MIT Lizenz', 'https://github.com/kirel/political-affiliation-prediction/blob/master/LICENSE'}.
+      %h4 Autoren/Impressum
+      .row
+        %p.col-md-6
+          Daniel Kirsch
+          %br
+          %em Art Director
+          %br
+          #{link_to 'http://danielkirs.ch'}
+        %p.col-md-6
+          Felix Bießmann
+          %br
+          %em Mad Scientist
+          %br
+          #{link_to 'http://www.user.tu-berlin.de/felix.biessmann'}
