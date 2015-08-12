@@ -103,3 +103,7 @@ To deploy:
 ### When the registry fails
 
 docker save kirel/political-affiliation-prediction | bzip2 | pv | ssh ubuntu@52.28.176.27 'bunzip2 | sudo docker load'
+
+## License
+
+Copyright (c) 2015 Daniel Kirsch, Felix Bießmann, released under the MIT license, see [MIT-LICENSE](MIT-LICENSE)
