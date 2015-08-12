@@ -22,7 +22,7 @@ $(function () {
       .endAngle(Math.PI/2)
       .value(function(d) { return d.probability });
 
-  var svg = d3.select('svg#prediction')
+  var svg = d3.select('#prediction svg')
       .attr('width', width)
       .attr('height', height)
       .append('g')
@@ -35,10 +35,10 @@ $(function () {
 
       var new_arcs = arcs.enter().append('g')
           .attr('class', function(d) { return 'arc ' + d.data.party })
-          .each(function(d) { this._current = d });
 
       new_arcs.append('path')
-          .attr('d', arc);
+          .attr('d', arc)
+          .each(function(d) { this._current = d }); // for arc tween
 
       new_arcs.append('text')
           .attr('transform', function(d) { return 'translate(' + arc.centroid(d) + ')' })
@@ -48,6 +48,7 @@ $(function () {
 
       // update existing elements
 
+      arcs.attr('class', function(d) { return 'arc ' + d.data.party })
       arcs.select('path')
           .transition()
           .duration(duration)
@@ -96,13 +97,20 @@ $(function () {
           });
   });
 
-  function arcTween(a) {
-      var dataNode = d3.select(this.parentNode).node();
-      var i = d3.interpolate(dataNode._current, a);
-      dataNode._current = i(0);
+  update([
+      {probability: 0.25, party: '?'},
+      {probability: 0.25, party: '?'},
+      {probability: 0.25, party: '?'},
+      {probability: 0.25, party: '?'}
+  ]);
+
+  function arcTween(d, i, a) {
+      var i = d3.interpolate(this._current, d);
+      this._current = i(0);
       return function(t) {
           return arc(i(t));
       }
   }
 
 });
+

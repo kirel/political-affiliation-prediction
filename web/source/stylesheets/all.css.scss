@@ -16,12 +16,14 @@ body {
   background: #FCFCFA;
 }
 
-svg {
-  display: block;
-  margin: 0 auto 3em auto;
+#prediction {
+  svg {
+    display: block;
+    margin: 1em auto 2em;
+  }
 }
 
-.arc path { stroke: #FFF; }
+.arc path { stroke: #FFF; fill: lightgray; }
 .arc text { fill: #000; }
 
 .arc.cdu    path { fill: $cdu; }
