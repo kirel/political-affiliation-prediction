@@ -84,6 +84,8 @@ $(function () {
   d3.select('#submit_url').on('click', function() {
       var text = d3.select('#url_query').node().value;
       console.log(text)
+      if (!/^http/.test(text)) text = 'http://'+text;
+      d3.select('#url_query').node().value = text;
       d3.json('/api/predict')
           .header("Content-Type", "application/x-www-form-urlencoded")
           .post("url="+text, function(error, data) {
