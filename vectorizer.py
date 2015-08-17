@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import cPickle
 from sklearn.feature_extraction.text import CountVectorizer
