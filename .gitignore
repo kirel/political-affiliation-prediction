@@ -1,6 +1,7 @@
 model/*
 
 *.swp
+*.pid
 
 .ipynb_checkpoints
 
