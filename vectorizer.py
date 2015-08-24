@@ -28,7 +28,7 @@ class Vectorizer:
             print "Training Vectorizer"
             self.train()
         else: 
-            print "Loading Vectorizer"
+            print "Loading Vectorizer %s"%self.fn
             self.processors = cPickle.load(open(self.fn))
         
 

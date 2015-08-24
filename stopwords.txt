@@ -4,6 +4,10 @@
 ; LAST UPDATE 15. Jan 2011
 ; Besucht doch mal: www.solariz.de
 ; Quell Link: http://solariz.de/649/deutsche-stopwords.htm
+dr.
+dr
+prof
+prof.
 liebe
 kolleginnen
 kollegen

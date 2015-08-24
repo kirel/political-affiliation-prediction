@@ -8,11 +8,11 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d, corrcoef, array
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d, corrcoef, array, mean
 from scipy.stats.mstats import zscore
 from scipy.sparse import vstack
 from numpy.random import permutation
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression,SGDClassifier
 from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
@@ -22,28 +22,47 @@ from vectorizer import Vectorizer
 from newsreader import load_sentiment
 import codecs
 from itertools import chain
-from downloader import get_speech_text
+from downloader import *
+from partyprograms import *
+import pdb
 
-def optimize_bow(folder='model'):
-    steps = [['stemming','trigrams','tfidf'],\
-             ['stemming','trigrams'],\
-             ['trigrams','tfidf'],\
-             ['trigrams'],\
-             ['stemming','bigrams','tfidf'],\
-             ['stemming','bigrams'],\
-             ['bigrams','tfidf'],\
-             ['bigrams'],\
-             ['stemming','unigrams','tfidf'],\
+def optimize_bow_binary(folder='model'):
+    steps = [['stemming','unigrams','tfidf'],\
              ['stemming','unigrams'],\
-             ['unigrams','tfidf'],\
              ['unigrams'],\
              ['hashing'],\
+             ['hashing','tfidf']
              ]
-    for trysteps in steps:
-        print 'Trying %s'%'_'.join(sorted(trysteps))
-        test_with_nested_CV(folder=folder,steps=trysteps)
+    cleaning = [[],['stopwords'],\
+                ['stopwords','unterbrechung'], \
+                ['stopwords','abgeordnete'],\
+                ['stopwords', 'unterbrechung', 'abgeordnete']]
 
-def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfidf']):
+    for trysteps in steps:
+        for trycleaning in cleaning:
+            print 'Trying BOW-vectorizer %s'%'_'.join(sorted(trysteps+trycleaning))
+            test_with_nested_CV_binary(folder=folder,steps=trysteps,cleaning=trycleaning)
+
+
+def optimize_bow(folder='model'):
+    steps = [['stemming','unigrams','tfidf'],\
+             ['stemming','unigrams'],\
+             ['unigrams'],\
+             ['hashing'],\
+             ['hashing','tfidf']
+             ]
+    cleaning = [[],['stopwords'],\
+                ['stopwords','unterbrechung'], \
+                ['stopwords','abgeordnete'],\
+                ['stopwords', 'unterbrechung', 'abgeordnete']]
+
+    for trysteps in steps:
+        for trycleaning in cleaning:
+            print 'Trying BOW-vectorizer %s'%'_'.join(sorted(trysteps+trycleaning))
+            test_with_nested_CV(folder=folder,steps=trysteps,cleaning=trycleaning)
+
+def test_with_nested_CV_binary(folder='model',folds=4, plot=True, \
+        steps=['hashing','tfidf'],cleaning=['stopwords','unterbrechung', 'abgeordnete']):
     '''
     
     Evaluates the classifer by doing nested CV 
@@ -58,21 +77,41 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfi
     folds   number of folds
 
     '''
+    if 'stopwords' in cleaning and 'abgeordnete' in cleaning : 
+        stops=get_stops(includenames=True)
+    elif 'stopwords' in cleaning: 
+        stops=get_stops(includenames=False)
+    else: stops=[]
+
     # start timer
     import time
     t0 = time.time()
-    # create bag of words representations
-    vv = Vectorizer(steps=steps)
 
     # load data
-    vec = Vectorizer(folder=folder)
-    data = get_speech_text(folder=folder)
+    vec = Vectorizer(folder=folder,steps=steps,train=True)
+    data = get_speech_text(folder=folder, force_parse=True)
+    programs = get_partyprograms(folder=folder)
     for key in data.keys():
-        data[key] = vec.transform(data[key])
+        data[key] = vec.transform([clean(txt, folder=folder,\
+                    stopwords=stops, \
+                    remove_unterbrechung='unterbrechung' in cleaning)\
+                    for txt in data[key]])
+        programs[key] = vec.transform([clean(txt, folder=folder,\
+                    stopwords=stops,\
+                    remove_unterbrechung=False)\
+                    for txt in programs[key]])
+
     # create numerical labels
-    Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
+    labels = {'linke':-1,'cdu':1,'gruene':-1,'spd':1} 
+    Y = hstack(map((lambda x: ones(data[x].shape[0])*labels[x]),data.keys()))
     # create data matrix
     X = vstack(data.values())
+    
+    # create numerical labels for partyprograms (i.e. test data)
+    Y_test = hstack(map((lambda x: ones(programs[x].shape[0])*labels[x]),programs.keys()))
+    # create data matrix for partyprograms
+    X_test = vstack(programs.values())
+
     # permute data 
     fsize = len(Y)/folds
     randidx = permutation(len(Y))
@@ -82,20 +121,22 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfi
     Y = Y[:fsize*folds]
     # allocate matrices for predictions
     predicted = zeros(fsize*folds)
-    predicted_prob = zeros((fsize*folds,len(data)))
+    predicted_prob = zeros((fsize*folds,2))
         
     # the regularization parameters to choose from 
-    parameters = {'C': (10.**arange(-4,4,1.)).tolist()}
-    
+    parameters = {'C': (10.**arange(-2,4,1.)).tolist()}
+    #parameters = {'alpha': (10.**arange(-4,4,4.)).tolist()}
+    print "Starting Binary Nested Cross-Validation on %d folds"%folds
     # do nested CV
     for ifold in range(folds):
         testidx = idx[ifold,:]
         trainidx = idx[setdiff1d(arange(folds),ifold),:].flatten()
-        text_clf = LogisticRegression(class_weight='auto',dual=True)
+        #text_clf = SGDClassifier(loss='log',verbose=3,class_weight='auto')
+        text_clf = LogisticRegression(class_weight='auto',solver='lbfgs',multi_class='multinomial')
         # for nested CV, do folds-1 CV for parameter optimization
         # within inner CV loop and use the outer testfold as held-out data
         # for model validation
-        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=(folds-1))
+        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=(folds-1),verbose=3)
         gs_clf.fit(X[trainidx,:],Y[trainidx])
         predicted[testidx] = gs_clf.predict(X[testidx,:])
         predicted_prob[testidx,:] = gs_clf.predict_proba(X[testidx,:])
@@ -112,13 +153,136 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, steps=['hashing','tfi
     print '************ Total *************'
     print '********************************'
     report += metrics.classification_report(Y, predicted,target_names=data.keys())
+    report += '\nAccuracy %f\n'%mean(Y == predicted)
+    # test on partyprogram data
+    report +='Test on partyprograms [Binary]\n' 
+    report += metrics.classification_report(Y_test, gs_clf.predict(X_test),target_names=data.keys())
+    report += '\nAccuracy %f\n'%mean(Y_test == gs_clf.predict(X_test)) 
     # dump metrics to file
-    open(folder+'/report_%s.txt'%'_'.join(sorted(steps)),'wb').write(report)
+    open(folder+'/report_binary_%s.txt'%'_'.join(sorted(steps+cleaning)),'wb').write(report)
     print(report)
     conf_mat = metrics.confusion_matrix(Y,predicted)
-    open(folder+'/conf_mat_%s.txt'%'_'.join(sorted(steps)),'wb').write(json.dumps(conf_mat.tolist()))
+    open(folder+'/conf_mat_binary_%s.txt'%'_'.join(sorted(steps+cleaning)),'wb').write(json.dumps(conf_mat.tolist()))
     print(conf_mat)
+   
+    if plot:
+        # print confusion matrix
+        import pylab
+        pylab.figure(figsize=(16,16))
+        pylab.imshow(metrics.confusion_matrix(Y,predicted),interpolation='nearest')
+        pylab.colorbar()
+        labels = ['opposition','regierung']
+        pylab.xticks(arange(2),[x for x in labels])
+        pylab.yticks(arange(2),[x for x in labels])
+        pylab.xlabel('Predicted')
+        pylab.ylabel('True')
+        font = {'family' : 'normal', 'size'   : 30}
+        pylab.rc('font', **font)
+        pylab.savefig(folder+'/conf_mat_binary_%s.pdf'%'_'.join(sorted(steps+cleaning)),bbox_inches='tight')
+
+
+def test_with_nested_CV(folder='model',folds=5, plot=True, \
+        steps=['hashing','tfidf'],cleaning=['stopwords','unterbrechung', 'abgeordnete']):
+    '''
     
+    Evaluates the classifer by doing nested CV 
+    i.e. keeping 1/folds of the data out of the training and doing training 
+    (including model selection for regularizer) on the training set and testing
+    on the held-out data
+    
+    Also prints some stats and figures
+    
+    INPUT
+    folder  folder with model files
+    folds   number of folds
+
+    '''
+    if 'stopwords' in cleaning and 'abgeordnete' in cleaning : 
+        stops=get_stops(includenames=True)
+    elif 'stopwords' in cleaning: 
+        stops=get_stops(includenames=False)
+    else: stops=[]
+
+    # start timer
+    import time
+    t0 = time.time()
+
+    # load data
+    vec = Vectorizer(folder=folder,steps=steps,train=True)
+    data = get_speech_text(folder=folder, force_parse=True)
+    programs = get_partyprograms(folder=folder)
+    for key in data.keys():
+        data[key] = vec.transform([clean(txt, folder=folder,\
+                    stopwords=stops, \
+                    remove_unterbrechung='unterbrechung' in cleaning)\
+                    for txt in data[key]])
+        programs[key] = vec.transform([clean(txt, folder=folder,\
+                    stopwords=stops,\
+                    remove_unterbrechung=False)\
+                    for txt in programs[key]])
+
+    # create numerical labels
+    Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
+    # create data matrix
+    X = vstack(data.values())
+    
+    # create numerical labels for partyprograms (i.e. test data)
+    Y_test = hstack(map((lambda x: ones(programs[data.keys()[x]].shape[0])*x),range(len(programs))))
+    # create data matrix for partyprograms
+    X_test = vstack(programs.values())
+
+    # permute data 
+    fsize = len(Y)/folds
+    randidx = permutation(len(Y))
+    Y = Y[randidx]
+    X = X[randidx,:]
+    idx = reshape(arange(fsize*folds),(folds,fsize))
+    Y = Y[:fsize*folds]
+    # allocate matrices for predictions
+    predicted = zeros(fsize*folds)
+    predicted_prob = zeros((fsize*folds,len(data)))
+        
+    # the regularization parameters to choose from 
+    parameters = {'C': (10.**arange(-4,4,1.)).tolist()}
+    #parameters = {'alpha': (10.**arange(-4,4,4.)).tolist()}
+    print "Starting Nested Cross-Validation on %d folds"%folds
+    # do nested CV
+    for ifold in range(folds):
+        testidx = idx[ifold,:]
+        trainidx = idx[setdiff1d(arange(folds),ifold),:].flatten()
+        #text_clf = SGDClassifier(loss='log',verbose=3,class_weight='auto')
+        text_clf = LogisticRegression(class_weight='auto',solver='lbfgs',multi_class='multinomial')
+        # for nested CV, do folds-1 CV for parameter optimization
+        # within inner CV loop and use the outer testfold as held-out data
+        # for model validation
+        gs_clf = GridSearchCV(text_clf, parameters, n_jobs=-1, cv=(folds-1),verbose=3)
+        gs_clf.fit(X[trainidx,:],Y[trainidx])
+        predicted[testidx] = gs_clf.predict(X[testidx,:])
+        predicted_prob[testidx,:] = gs_clf.predict_proba(X[testidx,:])
+        print '************ Fold %d *************'%(ifold+1)
+        print metrics.classification_report(Y[testidx], predicted[testidx],target_names=data.keys()) 
+    
+    t1 = time.time()
+    total_time = t1 - t0
+    timestr = 'Wallclock time: %f sec\n'%total_time
+    dimstr = 'Vocabulary size: %d\n'%X.shape[-1]
+    report = timestr + dimstr
+    # extract some metrics
+    print '********************************'
+    print '************ Total *************'
+    print '********************************'
+    report += metrics.classification_report(Y, predicted,target_names=data.keys())
+    # test on partyprogram data
+    report +='Test on partyprograms\n' 
+    report += metrics.classification_report(Y_test, gs_clf.predict(X_test),target_names=data.keys())
+    
+    # dump metrics to file
+    open(folder+'/report_%s.txt'%'_'.join(sorted(steps+cleaning)),'wb').write(report)
+    print(report)
+    conf_mat = metrics.confusion_matrix(Y,predicted)
+    open(folder+'/conf_mat_%s.txt'%'_'.join(sorted(steps+cleaning)),'wb').write(json.dumps(conf_mat.tolist()))
+    print(conf_mat)
+   
     if plot:
         # print confusion matrix
         import pylab

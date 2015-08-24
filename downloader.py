@@ -56,51 +56,63 @@ def download(url='https://www.bundestag.de/plenarprotokolle', \
 
                 fh.close()
 
-def get_stops():
+def get_stops(includenames=True):
     # generic stopwords
-    stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[10:]
+    stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[7:]
     stops = map(lambda x:x.lower().strip(),stopwords)
-    # names of abgeordnete
-    abgeordnete = codecs.open('abgeordnete.txt',encoding='utf-8').readlines()
-    names = unique([y.strip().lower() for x in abgeordnete for y in x.split(',')]).tolist()
+    names = []
+    if includenames:
+        # names of abgeordnete
+        abgeordnete = codecs.open('abgeordnete.txt',encoding='utf-8').readlines()
+        names = unique([y.strip().lower().split(' ')[0] for x in abgeordnete for y in x.split(',')]).tolist()
     return stops + names
 
+rx_newline = re.compile(u'[\.\n]')
 rx_nonword = re.compile(u'[\W_^0-9]+', re.UNICODE)
-rx_beifall = re.compile(r'\(beifall[^\(]{1,100}\)')
-rx_zurufe = re.compile(r'\(zuruf[^\(]{1,100}\)')
-pre_remove = [rx_beifall, rx_zurufe]
+rx_beifall = re.compile(r'\(beifall[^\(]{1,200}\)')
+rx_zurufe = re.compile(r'\(zuruf[^\(]{1,200}\)')
+rx_widerspruch = re.compile(r'\(widerspruch[^\(]{1,200}\)')
+pre_remove = [rx_beifall, rx_zurufe, rx_widerspruch]
 
-def clean(txt, folder='model', stopwords=[]):
-    # remove applaus (too easy indicator of party affiliation)
-    for rx in pre_remove:
-        txt = rx.sub(' ', txt)
+def clean(txt, folder='model', stopwords=[], remove_unterbrechung=True):
+    
+    # remove newlines and full stops
+    txt = rx_newline.sub(' ', txt)
+
+    if remove_unterbrechung:
+        # remove applaus (too easy indicator of party affiliation)
+        for rx in pre_remove:
+            txt = rx.sub(' ', txt)
+
     tokens = [rx_nonword.sub('', split).strip() for split in txt.split(' ')]
+    
     tokens_sans_stops = [token for token in tokens if token not in stopwords]
     txt = ' '.join(tokens_sans_stops)
     return txt
 
-def get_speech_text(folder='model',suffix='_parsed.json'):
+def get_speech_text(folder='model',suffix='_parsed.json', force_parse=False):
 
     # find all files with suffix
     files = glob.glob(folder+"/textdata/*"+suffix)
+    if len(files)==0 or force_parse:
+        parse(folder=folder)
 
     for f in files:    
         # get the parsed data
         thisdata = json.loads(codecs.open(f,'r','utf-8').read())
-        print "Read parsed file %s"%f
+        #print "Read parsed file %s"%f
         if files.index(f) == 0:
             data = {x:[] for x in thisdata.keys()}
 
-        print "Attaching data to speech collection"
+        #print "Attaching data to speech collection"
         for pa in data.keys():
             data[pa] += thisdata[pa]
 
     for pa in data.keys():
         print 'Found %d speeches for party %s'%(len(data[pa]),pa)
-
     return data
-
-def parse(folder='model', suffix='-data.txt', \
+   
+def parse(folder='model', force_new_parse=False, suffix='-data.txt', \
     parties = [{'name':'linke','searchpattern':'DIE LINKE'},\
                 {'name':'spd','searchpattern':'SPD'},\
                 {'name':'gruene','searchpattern':'90/DIE'},\
@@ -126,7 +138,7 @@ def parse(folder='model', suffix='-data.txt', \
     for f in files:
         fn_parsed = f[:-4] + "_parsed.json"
         
-        if not os.path.isfile(fn_parsed):
+        if not os.path.isfile(fn_parsed) or force_new_parse:
             print "Parsing %s (%d/%d)"%(f,files.index(f)+1,len(files))
             fh = codecs.open(f,'r', encoding='utf-8', errors='ignore')
             txt = fh.read()

@@ -1,0 +1,19 @@
+Wallclock time: 403.977058 sec
+Vocabulary size: 73714
+             precision    recall  f1-score   support
+
+      linke       0.83      0.79      0.81      5364
+     gruene       0.83      0.86      0.85      6444
+
+avg / total       0.83      0.83      0.83     11808
+
+Accuracy 0.830877
+Test on partyprograms [Binary]
+             precision    recall  f1-score   support
+
+      linke       0.99      0.66      0.79       214
+     gruene       0.42      0.98      0.59        54
+
+avg / total       0.88      0.72      0.75       268
+
+Accuracy 0.723881
