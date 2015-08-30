@@ -4,11 +4,12 @@ import urllib2
 import cPickle
 from bs4 import BeautifulSoup
 import json
+import operator
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 import glob
-from scipy import ones,hstack,arange,reshape,zeros,setdiff1d, corrcoef, array, mean
+from scipy import ones,hstack,arange,reshape,zeros,setdiff1d, corrcoef, array, mean, sign
 from scipy.stats.mstats import zscore
 from scipy.sparse import vstack
 from numpy.random import permutation
@@ -297,22 +298,22 @@ def test_with_nested_CV(folder='model',folds=5, plot=True, \
         pylab.rc('font', **font)
         pylab.savefig(folder+'/conf_mat.pdf',bbox_inches='tight')
 
-def word_party_correlations(folder='model'):
-    stopwords = codecs.open("stopwords.txt", "r", "utf-8").readlines()[5:]
-    stops = map(lambda x:x.lower().strip(),stopwords)
-
-    # using now stopwords and filtering out digits
-    bow = TfidfVectorizer(min_df=2)
-    datafn = folder+'/textdata/rawtext.pickle'
-    data = cPickle.load(open(datafn))
-    bow = bow.fit(chain.from_iterable(data.values()))
-
+def word_party_correlations(folder='model', steps=['unigram','tfidf']):
+    # load data
+    vec = Vectorizer(folder=folder,steps=steps,train=True)
+    data = get_speech_text(folder=folder, force_parse=True)
+    stops=get_stops(includenames=True)
+    bow = vec.processors['count_vectorizer']
+    
     # create numerical labels
     Y = hstack(map((lambda x: ones(len(data[data.keys()[x]]))*x),range(len(data))))
     
     # create data matrix
     for key in data.keys():
-        data[key] = bow.transform(data[key])
+        data[key] = vec.transform([clean(txt, folder=folder,\
+                    stopwords=stops, \
+                    remove_unterbrechung=True)\
+                    for txt in data[key]])
     
     X = vstack(data.values())
     
@@ -328,7 +329,7 @@ def word_party_correlations(folder='model'):
 
     # compute label-BoW-tfidf-feature correlation
     lb = LabelBinarizer()
-    partylabels = zscore(lb.fit_transform(Y),axis=0)
+    partylabels = sign(lb.fit_transform(Y) - 0.5)
     # sentiment  vs party correlation
     sentVsParty = corrcoef(partylabels.T,sentiments)[-1,:-1]
     fn = folder+'/sentiment_vs_party.json'
@@ -338,6 +339,7 @@ def word_party_correlations(folder='model'):
     
     json.dump(dict(zip(data.keys(),sentVsParty)),open(fn,'wb'))
  
+
     wordidx2word = dict(zip(bow.vocabulary_.values(),bow.vocabulary_.keys()))
     allcors = dict(zip(data.keys(),[[]]*len(data.keys())))
     # this is extremely cumbersome and slow, ...
@@ -353,4 +355,55 @@ def word_party_correlations(folder='model'):
         allcors[data.keys()[partyidx]] = dict(cors_words)   
     fn = folder+'/words_correlations.json' 
     json.dump(dict(allcors),open(fn,'wb'))
+
+def plot_sentiments(folder='model'):
+    fn = folder+'/sentiment_vs_party.json'
+    sentiments = json.loads(open(fn).read())
+    xlabels = {
+                'linke': u'Linke\n(64 seats)',
+                'gruene': u'Grüne\n(63 seats)',
+                'spd':'SPD\n(193 seats)',
+                'cdu':'CDU/CSU\n(311 seats)'
+                }
+    # print confusion matrix
+    import pylab
+    seats = array([64,63,193,311])
+    print corrcoef(seats,array(sentiments.values()))
+    pylab.figure(figsize=(8,6))
+    sentiments = dict(sorted(sentiments.items(), key=operator.itemgetter(1)))
+    pylab.bar(range(len(sentiments)),sentiments.values(),width=.8,color=['purple', 'green', 'red','black'])
+    pylab.xlim(-.2,4)
+    pylab.yticks(arange(-.2,.3,.1))
+    pylab.xticks(arange(len(sentiments)) + .5,[xlabels[x] for x in sentiments.keys()])
+    pylab.ylabel('Sentiment')
+    font = {'family' : 'normal', 'size'   : 16}
+    pylab.rc('font', **font)
+    pylab.savefig(folder+'/party_sentiments.pdf',bbox_inches='tight')
+
+def list_top_words(folder='model',topwhat=20):
+    import pylab
+    fn = folder+'/words_correlations.json'
+    cors = json.loads(open(fn).read())
+    colors = {'linke':'purple','gruene':'green','spd':'red','cdu':'black'}
+    partyName = {'linke':'Linke','gruene':u'Grüne','spd':'SPD','cdu':'CDU/CSU'}
+    cors = {key:sorted(cors[key].items(), key=operator.itemgetter(1)) for key in cors.keys()}
+    for party in cors.keys():
+        pylab.figure(figsize=(3,12))
+        tmp = cors[party][:topwhat] + [('...',0)] +  cors[party][-topwhat:]
+        words = [x[0] for x in tmp]
+        wordcors = [x[1] for x in tmp]
+
+        pylab.barh(arange(len(words)),wordcors,color=colors[party])
+        pylab.yticks(arange(len(words)),words)
+        pylab.ylim(-.2,len(words))
+        lim = max(abs(array(wordcors))) * 1.1
+        pylab.xlim(-lim,lim)
+        pylab.xticks(array([-.2,0,.2]))
+        pylab.title(partyName[party])
+        pylab.xlabel('Correlation')
+        font = {'family' : 'normal', 'size'   : 16}
+        pylab.rc('font', **font)
+        pylab.savefig(folder+'/party_word_correlations-%s.pdf'%party,bbox_inches='tight')
+
+       
 
