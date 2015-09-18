@@ -157,6 +157,10 @@ Classification performance on the binary prediction problem, categorizing speech
 }
 \end{table}
 
+
+While the results on parliament speeches, the data on which the classifiers were trained, do not exhibit any interesting structure across classes (party or government affiliation), the classification accuracy on the party manifestos does show a systematic pattern: While party programs of the opposition, especially of the left wing, can be classified relatively reliably with precision and recall of 0.81 and 0.76, respectively, the party manifestos of the government, especially the strongest party of the christian conservatives, cannot reliably predicted from the model trained on the parliament speeches. This can have a number of reasons, one being that there is a covariate shift between the text of the party manifestos, written before the election, and the texts of the parliament speeches. 
+
+
 \section{Speech sentiment correlates with political power}\label{sec:sentiment_result}
 We analysed the sentiment of each speech of a political party and plot the results in \autoref{fig:party_sentiments}. While the methodology used for estimating the sentiment (see \autoref{sec:sentiment_analysis_methods}), it can yield some insight into the emotional content of a speech. High values indicate more pronounced usage of positive words, whereas negative values indicate more pronounced usage of words associated with negative emotional content. We can quantify political power as the number of seats a party has in the parliament. Our analyses show a strong trend supporting the hypothesis that the more political power a party has, the more positive sentiment their speech has, and vice versa, the less seats a party has, the more negative content their speeches contain. This pattern is evident from the barplot in \autoref{fig:party_sentiments} and supported by a high correlation of 0.86 between number of parliament seats and sentiment index.
 
