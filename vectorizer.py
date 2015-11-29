@@ -6,7 +6,7 @@ from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from itertools import chain,islice
 from Stemmer import Stemmer
-from downloader import get_speech_text
+from manifestoproject import get_text
 
 class Vectorizer:
     '''
@@ -15,7 +15,7 @@ class Vectorizer:
 
     '''
     
-    def __init__(self,folder='model',steps=['hashing','tfidf'],train=False):
+    def __init__(self,folder='manifestoproject',steps=['stemming','tfidf'],train=False):
         '''
         Initialize Vectorizer
         Loads or trains bow vectorizer
@@ -40,7 +40,7 @@ class Vectorizer:
         '''
         
         processors = dict()
-        data = get_speech_text(folder=self.folder)
+        data = get_text(folder=self.folder)
         text = chain.from_iterable(data.values())
         
         # stemming

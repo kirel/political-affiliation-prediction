@@ -10,11 +10,11 @@ from sklearn.pipeline import Pipeline
 from sklearn import metrics
 from time import sleep
 from vectorizer import Vectorizer
-from downloader import get_speech_text
+from manifestoproject import *
 
 class Classifier:
 
-    def __init__(self,folder='model',train=False):
+    def __init__(self,folder='manifestoproject',train=True):
         '''
         Creates a classifier object
         if no model is found, or train is set True, a new classifier is learned
@@ -26,7 +26,7 @@ class Classifier:
         '''
         self.folder = folder
         # load Bag-of-Word extractor
-        self.bow_vectorizer = Vectorizer(self.folder)
+        self.bow_vectorizer = Vectorizer(self.folder,train = train)
         # if there is no classifier file or training is invoked
         if (not os.path.isfile(self.folder+'/classifier.pickle')) or train:
             print 'Training classifier'
@@ -77,17 +77,22 @@ class Classifier:
         '''
         try:
             # load the data
-            data = get_speech_text(folder=self.folder)
+            data = get_text(folder=self.folder)
             for key in data:
-                data[key] = self.bow(data[key])
+                data[key] = self.bow([a for a in data[key]])
         except:
             print('Could not load text data file in\n' + \
                   'Try executing [python downloader.py --download --parse]')
             raise
         # create numerical labels for each party
-        Y = hstack(map((lambda x: ones(data[data.keys()[x]].shape[0])*x),range(len(data))))
+        Y = hstack(map((lambda x: ones(data[x].shape[0])*right_left_features(x)),data.keys()))
         # create the data matrix
         X = vstack(data.values())
+        
+        invalid = Y == 0
+        Y = Y[~invalid]
+        X = X[~invalid,:]
+
         # estimate fold size (if not a divisor of total samples)
         fsize = len(Y)/folds
         # permute data indices for training
@@ -103,5 +108,5 @@ class Classifier:
         gs_clf.fit(X,Y)
         print "Classifier reached mean %0.2f accuracy with regularizer: %f"%(gs_clf.best_score_, gs_clf.best_params_['C'])
         # dump classifier to pickle
-        cPickle.dump({'classifier':gs_clf,'labels':data.keys()},open(self.folder+'/classifier.pickle','wb'),-1)
+        cPickle.dump({'classifier':gs_clf,'labels':['left','right']},open(self.folder+'/classifier.pickle','wb'),-1)
 

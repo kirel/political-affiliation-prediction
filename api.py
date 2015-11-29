@@ -74,7 +74,7 @@ def predict():
 
 @app.route('/api/distances.json')
 def news():
-  return flask.send_from_directory('model', 'distances.json')
+  return flask.send_from_directory('manifesto', 'distances.json')
 
 # static files from web/build
 
@@ -89,7 +89,7 @@ def static_proxy(path):
 
 if __name__ == "__main__":
     port = 5000
-    classifier = Classifier()
+    classifier = Classifier(folder='manifestoproject')
     # Open a web browser pointing at the app.
     # os.system("open http://localhost:{0}".format(port))
 
