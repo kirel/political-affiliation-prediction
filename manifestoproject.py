@@ -37,9 +37,16 @@ def get_text(folder="manifestoproject"):
     data = dict([(l,zip(*filter(lambda x: x[1]==l,data))[0]) for l in labels])
     return data
 
+def get_raw_text(folder='manifestoproject'):
+    files = glob.glob(folder+"/[0-9]*_[0-9]*.csv")
+    lines = chain(*map(lambda x: open(x).readlines()[1:],files))
+    return zip(*filter(None,map(lambda x: parse_manifesto(x),lines)))
+    
+
 def parse_manifesto(line):
     d = re.findall("\"[^\"]*\",\"\d+\"",line)
     if d:
-        return d[0][1:-1].split("\",\"")
+        text,label = d[0][1:-1].split("\",\"")
+        return text,int(label)
 
 

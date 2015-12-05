@@ -42,7 +42,7 @@ def api():
 def predict():
     if request.form.has_key('url'):
         url = request.form['url']
-        text,title = fetch_url(url)
+        title,text = fetch_url(url)
         return jsonify(classifier.predict(text))
     else:
         text = request.form['text']

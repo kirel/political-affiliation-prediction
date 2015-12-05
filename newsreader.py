@@ -13,7 +13,7 @@ import itertools
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy import double,triu,ones,hstack,arange,reshape,zeros,setdiff1d,array,zeros,eye,argmax,percentile
 
-def get_news(sources=['spiegel','faz','welt','zeit'], folder='model'):
+def get_news(sources=['spiegel','faz','welt','zeit'], folder='manifestoproject'):
     '''
     Collects all news articles from political ressort of major German newspapers
     Articles are transformed to BoW vectors and assigned to a political party
@@ -32,7 +32,7 @@ def get_news(sources=['spiegel','faz','welt','zeit'], folder='model'):
     
     news = dict([(source,[]) for source in sources])  
     # the classifier for prediction of political affiliation
-    clf = classifier.Classifier(folder=folder)
+    clf = classifier.Classifier(folder=folder, train=True)
     
     for source in sources:
 
