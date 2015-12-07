@@ -62,7 +62,7 @@ def mapPredictions2RightLeft(pred):
     to left right label (probabilistic)
     '''
     rightLeftPred = {label[0]:\
-    sum(map(lambda y: y[1],filter(lambda x: x[0]/100 in label[1],pred.items()))) \
+    sum(map(lambda y: y[1],filter(lambda x: x[0] in label[1],pred.items()))) \
             for label in label2rightleft.items()}
     normalizer = sum(rightLeftPred.values())
     if normalizer == 0:

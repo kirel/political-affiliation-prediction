@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+    <style type="text/css">
+        
+            div.bar {
+                display: inline-block;
+                width: 50px;
+                height: 75px;   /* Gets overriden by D3-assigned height below */
+                margin-right: 20px;
+                background-color: teal;
+            }
+        
+        </style>
+    </head>
+    <body>
+    
+    <p>Manifesto Classifier</p>
+        Name: <input type="text" id="textBox" value="Sicherheit">
+
+        <p>Click the button to change the value of the text field.</p>
+
+        <button onclick="textBoxFunction()">Try it</button>
+        <p id=result></p>
+               <script type="text/javascript" src="d3.js"></script>
+        <script type="text/javascript">
+        var width = 300,
+    height = 300,
+    radius = Math.min(width, height) / 2,
+    padding = 1;
+    var currentData;
+    var outerColor = d3.scale.category10();
+    var innerColor = d3.scale.ordinal()
+      .range(["#100000", "#FF0000"]);
+
+    var circleWidth = 80;
+    var outerRadius = width / 2;
+    var innerRadius = outerRadius - circleWidth;
+    var pie = d3.layout.pie(); 
+    
+    var arcInner = d3.svg.arc()
+                .innerRadius(0)
+                .outerRadius(innerRadius-padding);
+
+
+    var arcOuter = d3.svg.arc()
+                .innerRadius(innerRadius+padding)
+                .outerRadius(outerRadius);
+    
+    var svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+
+            
+    function obj2FieldsValues(obj) {
+            var fields = Object.keys(obj)
+            var vals = fields.map(function(key) {return obj[key]});
+            return {fields:fields,values:vals}
+    }
+
+        
+    function obj2Tuples(obj) {
+        return Object.keys(obj).map(function (key) {return [key,obj[key]]});
+    }
+
+   
+    function textBoxFunction() {
+        var queryText = document.getElementById("textBox").value
+        d3.json("/api/predict")
+            .header("Content-type", "application/x-www-form-urlencoded")
+            .post("text="+queryText, function(error, text) { 
+                currentData = text; 
+                visualize()
+        });
+    }
+
+    function visualize(data,labels){
+
+        var domainData = obj2FieldsValues(currentData.domain).values
+        var domainLabels = obj2FieldsValues(currentData.domain).fields
+                    
+        var leftrightData = obj2FieldsValues(currentData.leftright).values
+        var leftrightLabels = obj2FieldsValues(currentData.leftright).fields
+       
+        //Clean groups and set up new groups
+        svg.selectAll("g.arcInner").remove()
+        arcsInner = svg.selectAll("g.arcInner")
+                      .data(pie(leftrightData))
+                      .enter()
+                      .append("g")
+                      .attr("class", "arcInner")
+                      .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+       
+ 
+        //Draw arc paths
+        arcsInner.append("path")
+            .attr("fill", function(d, i) {
+                return innerColor(i);
+            })
+            .attr("d", arcInner);
+        
+        //Labels
+        arcsInner.append("text")
+            .attr("transform", function(d) {
+                return "translate(" + arcInner.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d,i) {
+                if (d.value > 0.1){
+                return Math.round(d.value*100)/100.0 + " " + leftrightLabels[i];
+                }
+            });
+
+        //Clean groups and set up new groups
+        svg.selectAll("g.arcOuter").remove()
+        arcsOuter = svg.selectAll("g.arcOuter")
+                      .data(pie(domainData))
+                      .enter()
+                      .append("g")
+                      .attr("class", "arcOuter")
+                      .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+       
+ 
+        //Draw arc paths
+        arcsOuter.append("path")
+            .attr("fill", function(d, i) {
+                return outerColor(i);
+            })
+            .attr("d", arcOuter);
+        
+        //Labels
+        arcsOuter.append("text")
+            .attr("transform", function(d) {
+                return "translate(" + arcOuter.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d,i) {
+                if (d.value > 0.1){
+                return Math.round(d.value*100)/100.0 + " " + domainLabels[i];
+                }
+            });
+
+        
+        }
+      
+        </script>
+    </body>
+</html>
