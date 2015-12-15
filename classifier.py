@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import cPickle
 from scipy import ones,hstack,arange,reshape,zeros,setdiff1d
+import json
 import os
 import glob
 from itertools import chain
@@ -26,6 +27,28 @@ label2domain = {
     'Welfare and Quality of Life':5,
     'Fabric of Society':6
     }
+
+def saveLabelSchema(folder = "manifestoproject"):
+    domainlabels = [{"domain":x[0],"label":x[1]} for x in label2domain.items()]
+    manifestocodes = [{"manifestocode":x[0],"topic":x[1]} for x in manifestolabels(folder).items()]
+    
+    json.dump(
+        {
+            "leftright":label2rightleft,
+            "domain":domainlabels,
+            "manifestocodes":manifestocodes 
+        },\
+        open(folder+"/schema.json","wb"),\
+        sort_keys=True, indent=2,separators=(',', ': '))
+
+def nullPrediction(folder = "manifestoproject"):
+    return json.load(open(folder+"/nullPrediction.json"))
+
+def manifestolabels(folder = "manifestoproject"):
+    lines = open(folder+"/manifestolabels.txt").readlines()
+    return dict(map(lambda x: (int(x[3:6]), x[8:-2]),lines))
+
+mc = manifestolabels("manifestoproject")
 
 def get_raw_text(folder='manifestoproject'):
     '''
@@ -66,9 +89,12 @@ def mapPredictions2RightLeft(pred):
             for label in label2rightleft.items()}
     normalizer = sum(rightLeftPred.values())
     if normalizer == 0:
-        return {x[0]:1.0/len(rightLeftPred) for x in rightLeftPred.items()}
+        return [{"label":x[0],"prediction":1.0/len(rightLeftPred)} \
+            for x in rightLeftPred.items()]
     else:
-        return {x[0]:x[1]/normalizer for x in rightLeftPred.items()}
+        return [{"label":x[0],"prediction":x[1]/normalizer} \
+            for x in rightLeftPred.items()]
+
 
 def mapPredictions2Domain(pred):
     '''
@@ -80,9 +106,11 @@ def mapPredictions2Domain(pred):
             for label in label2domain.items()}
     normalizer = sum(domainPred.values())
     if normalizer == 0:
-        return {x[0]:1.0/len(domainPred) for x in domainPred.items()}
+        return [{"label":x[0],"prediction":1.0/len(domainPred)} \
+            for x in domainPred.items()]
     else:
-        return {x[0]:x[1]/normalizer for x in domainPred.items()}
+        return [{"label":x[0],"prediction":x[1]/normalizer} \
+            for x in domainPred.items()]
 
 class Classifier:
 
@@ -113,17 +141,19 @@ class Classifier:
         text    a string to assign to a manifestoproject label
         
         '''
+        if text is "": return nullPrediction()
         
-        # predict probabilities of each party
+        # make it a list, if it is a string
         if not type(text) is list: text = [text]
         probabilities = self.clf.predict_proba(text).flatten()
         predictions = dict(zip(self.clf.classes_, probabilities.tolist()))
+        
         # transform the predictions into json output
         return {
                 'text':text,
                 'leftright':mapPredictions2RightLeft(predictions),
                 'domain':mapPredictions2Domain(predictions),
-                'prediction':predictions
+                'manifestocode':[{"label":mc[x[0]],"prediction":x[1]} for x in predictions.items()]
                 }
    
     def train(self,folds = 2):
