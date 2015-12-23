@@ -141,8 +141,10 @@ class Classifier:
         text    a string to assign to a manifestoproject label
         
         '''
-        if text is "": return nullPrediction()
-        
+        if (not type(text) is list) & (len(text)<3): 
+            print("Nullprediction")
+            return nullPrediction()
+        print("notNullprediction") 
         # make it a list, if it is a string
         if not type(text) is list: text = [text]
         probabilities = self.clf.predict_proba(text).flatten()

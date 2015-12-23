@@ -65,8 +65,7 @@ def static_proxy(path):
 
 if __name__ == "__main__":
     port = 5000
-    classifier = Classifier(folder='manifestoproject')
+    classifier = Classifier(folder='manifestoproject',train=True)
     # Open a web browser pointing at the app.
     os.system("open http://localhost:{0}".format(port))
-
     app.run(host='0.0.0.0', port = port, debug = DEBUG)
